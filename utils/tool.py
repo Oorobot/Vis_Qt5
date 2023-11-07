@@ -1,9 +1,9 @@
 import os
 from datetime import datetime
 from glob import glob
-import cv2
-from typing import List, Tuple
+from typing import Tuple
 
+import cv2
 import numpy as np
 import pydicom
 import SimpleITK as sitk
@@ -51,24 +51,47 @@ def get_SUVbw(pixel_value: np.ndarray, file: str) -> np.ndarray:
     \n 不适用于来源于 GE Medical 的 Dicom 文件。
     """
     image = pydicom.dcmread(file)
-    if "ATTN" in image.CorrectedImage and "DECY" in image.CorrectedImage and image.DecayCorrection == "START":
+    if (
+        "ATTN" in image.CorrectedImage
+        and "DECY" in image.CorrectedImage
+        and image.DecayCorrection == "START"
+    ):
         if image.Units == "BQML":
-            half_life = float(image.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife)
-            if image.SeriesDate <= image.AcquisitionDate and image.SeriesTime <= image.AcquisitionTime:
+            half_life = float(
+                image.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
+            )
+            if (
+                image.SeriesDate <= image.AcquisitionDate
+                and image.SeriesTime <= image.AcquisitionTime
+            ):
                 scan_datetime = image.SeriesDate + image.SeriesTime
-            if "RadiopharmaceuticalStartDateTime" in image.RadiopharmaceuticalInformationSequence[0]:
-                start_datetime = image.RadiopharmaceuticalInformationSequence[0].RadiopharmaceuticalStartDateTime
+            if (
+                "RadiopharmaceuticalStartDateTime"
+                in image.RadiopharmaceuticalInformationSequence[0]
+            ):
+                start_datetime = image.RadiopharmaceuticalInformationSequence[
+                    0
+                ].RadiopharmaceuticalStartDateTime
             else:
-                start_datetime = image.SeriesDate + image.RadiopharmaceuticalInformationSequence[0].RadiopharmaceuticalStartTime
+                start_datetime = (
+                    image.SeriesDate
+                    + image.RadiopharmaceuticalInformationSequence[
+                        0
+                    ].RadiopharmaceuticalStartTime
+                )
             decay_time = count_seconds(scan_datetime, start_datetime)
-            injected_dose = float(image.RadiopharmaceuticalInformationSequence[0].RadionuclideTotalDose)
+            injected_dose = float(
+                image.RadiopharmaceuticalInformationSequence[0].RadionuclideTotalDose
+            )
             decayed_dose = injected_dose * (2 ** (-decay_time / half_life))
             SUVbwScaleFactor = image.PatientWeight * 1000 / decayed_dose
         elif image.Units == "CNTS":
             SUVbwScaleFactor = image.get_item((0x7053, 0x1000))
         elif image.Units == "GML":
             SUVbwScaleFactor = 1.0
-    SUVbw = (pixel_value * float(image.RescaleSlope) + float(image.RescaleIntercept)) * SUVbwScaleFactor
+    SUVbw = (
+        pixel_value * float(image.RescaleSlope) + float(image.RescaleIntercept)
+    ) * SUVbwScaleFactor
     return SUVbw
 
 
@@ -83,7 +106,9 @@ def compute_SUVbw(image: sitk.Image):
     radiopharmaceutical_info = image.GetMetaData("0054|0016")
 
 
-def get_SUV_in_GE(pixel_value: np.ndarray, file: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_SUV_in_GE(
+    pixel_value: np.ndarray, file: str
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """来源: https://qibawiki.rsna.org/images/4/40/Calculation_of_SUVs_in_GE_Apps_v4_%282%29.doc。
     \n 仅适用于 GE medical
     \n 返回 SUVbw, SUVbsa, SUVlbm
@@ -91,18 +116,40 @@ def get_SUV_in_GE(pixel_value: np.ndarray, file: str) -> Tuple[np.ndarray, np.nd
     image = pydicom.dcmread(file)
     try:
         bw = image.PatientWeight * 1000  # g
-        bsa = (image.PatientWeight**0.425) * ((image.PatientSize * 100) ** 0.725) * 0.007184 * 10000
+        bsa = (
+            (image.PatientWeight**0.425)
+            * ((image.PatientSize * 100) ** 0.725)
+            * 0.007184
+            * 10000
+        )
         lbm = (
-            (1.10 * image.PatientWeight - 120 * ((image.PatientWeight / (image.PatientSize * 100)) ** 2))
+            (
+                1.10 * image.PatientWeight
+                - 120 * ((image.PatientWeight / (image.PatientSize * 100)) ** 2)
+            )
             if image.PatientSex == "M"  # 性别为男
-            else (1.07 * image.PatientWeight - 148 * ((image.PatientWeight / (image.PatientSize * 100)) ** 2))  # 性别为女
+            else (
+                1.07 * image.PatientWeight
+                - 148 * ((image.PatientWeight / (image.PatientSize * 100)) ** 2)
+            )  # 性别为女
         )
         decay_time = count_seconds(
             image.SeriesDate + image.SeriesTime,
-            image.SeriesDate + image.RadiopharmaceuticalInformationSequence[0].RadiopharmaceuticalStartTime,
+            image.SeriesDate
+            + image.RadiopharmaceuticalInformationSequence[
+                0
+            ].RadiopharmaceuticalStartTime,
         )
-        actual_activity = float(image.RadiopharmaceuticalInformationSequence[0].RadionuclideTotalDose) * (
-            2 ** (-(decay_time) / float(image.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife))
+        actual_activity = float(
+            image.RadiopharmaceuticalInformationSequence[0].RadionuclideTotalDose
+        ) * (
+            2
+            ** (
+                -(decay_time)
+                / float(
+                    image.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
+                )
+            )
         )
     except Exception as e:
         raise e
@@ -130,7 +177,11 @@ def read(file, ext):
         _temp_files = []
         for f in files:
             _i = sitk.ReadImage(f)
-            if series_instance_id == _i.GetMetaData("0020|000e") and row == _i.GetMetaData("0028|0010") and col == _i.GetMetaData("0028|0011"):
+            if (
+                series_instance_id == _i.GetMetaData("0020|000e")
+                and row == _i.GetMetaData("0028|0010")
+                and col == _i.GetMetaData("0028|0011")
+            ):
                 series[int(_i.GetMetaData("0020|0013"))] = {"image": _i, "file": f}
                 _temp_files.append(f)
 
@@ -145,7 +196,9 @@ def read(file, ext):
         if isPET:
             # 转换成 SUVbw
             for k in keys:
-                suvbw, _, _ = get_SUV_in_GE(sitk.GetArrayFromImage(series[k]["image"]), series[k]["file"])
+                suvbw, _, _ = get_SUV_in_GE(
+                    sitk.GetArrayFromImage(series[k]["image"]), series[k]["file"]
+                )
 
                 dicom_tags = pydicom.dcmread(series[k]["file"])
                 bw = dicom_tags.PatientWeight * 1000
@@ -154,7 +207,9 @@ def read(file, ext):
                     dicom_tags.SeriesDate + dicom_tags.SeriesTime,
                     dicom_tags.SeriesDate + ris.RadiopharmaceuticalStartTime,
                 )
-                actual_activity = float(ris.RadionuclideTotalDose) * (2 ** (-(decay_time) / float(ris.RadionuclideHalfLife)))
+                actual_activity = float(ris.RadionuclideTotalDose) * (
+                    2 ** (-(decay_time) / float(ris.RadionuclideHalfLife))
+                )
                 series[k]["image"] = series[k]["image"] * bw / actual_activity
                 image = series[k]["image"]
 

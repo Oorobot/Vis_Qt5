@@ -10,41 +10,46 @@
     <height>600</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
    <string>displayWindow</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
-   <item>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
     <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="spacing">
-      <number>3</number>
-     </property>
      <item>
-      <widget class="QGraphicsView" name="imageDisplay"/>
+      <layout class="QHBoxLayout" name="horizontalLayout1">
+       <item>
+        <widget class="QGraphicsView" name="imageDisplay"/>
+       </item>
+       <item>
+        <widget class="QScrollBar" name="imageScroll">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
-       <property name="spacing">
-        <number>20</number>
-       </property>
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
        <item>
-        <widget class="QLabel" name="viewInformation">
+        <widget class="QLabel" name="view">
          <property name="font">
           <font>
            <pointsize>10</pointsize>
           </font>
          </property>
          <property name="text">
-          <string>横断面</string>
+          <string>视图</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
@@ -62,24 +67,57 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="zoomBtn">
+        <widget class="QPushButton" name="fitButton">
          <property name="text">
-          <string>缩放</string>
+          <string>自适应</string>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="sliceInformation">
+        <widget class="QLabel" name="sliceCurrent">
          <property name="font">
           <font>
            <pointsize>10</pointsize>
           </font>
          </property>
          <property name="text">
-          <string>1/100</string>
+          <string>0</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="sliceChar">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>/</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="sliceTotal">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>0</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
