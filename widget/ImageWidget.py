@@ -1,3 +1,4 @@
+from typing import Union
 from PyQt6.QtCore import QPointF, QRectF, Qt
 from PyQt6.QtGui import QPainter, QPixmap
 from PyQt6.QtWidgets import (
@@ -36,15 +37,13 @@ class ImageWidget(QGraphicsPixmapItem):
         self,
         painter: QPainter,
         option: QStyleOptionGraphicsItem,
-        widget: QWidget,
+        widget: Union[QWidget, None],
     ) -> None:
         self.setOffset(-self.w_offset, -self.h_offset)
         painter.drawPixmap(-self.w_offset, -self.h_offset, self.pixmap())
 
     def setQGraphicsViewWH(self, w: int, h: int):
-        self.scale_default = min(
-            w * 1.0 / self.pixmap().width(), h * 1.0 / self.pixmap().height()
-        )
+        self.scale_default = min(w * 1.0 / self.pixmap().width(), h * 1.0 / self.pixmap().height())
         self.scale_value = self.scale_default
         self.setScale(self.scale_value)
 
@@ -72,9 +71,7 @@ class ImageWidget(QGraphicsPixmapItem):
         if event.delta() < 0 and self.scale_value <= 0.1:
             return
         delta = event.delta()
-        self.scale_value = (
-            self.scale_value + 0.1 if delta > 0 else self.scale_value - 0.1
-        )
+        self.scale_value = self.scale_value + 0.1 if delta > 0 else self.scale_value - 0.1
         self.setScale(self.scale_value)
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:

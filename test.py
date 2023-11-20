@@ -51,9 +51,7 @@ class win(QWidget, Ui_Displayer2D):
             array.shape[1],
             array.shape[0],
             array.shape[1] * self.image.channel,
-            QImage.Format.Format_Grayscale8
-            if self.image.channel == 1
-            else QImage.Format.Format_RGB888,
+            QImage.Format.Format_Grayscale8 if self.image.channel == 1 else QImage.Format.Format_RGB888,
         )
         self.pixmap = QPixmap.fromImage(q_image)
         self.imageWidget = ImageWidget(self.pixmap)
@@ -61,9 +59,7 @@ class win(QWidget, Ui_Displayer2D):
         self.scene.addItem(self.imageWidget)
 
     def openFile(self):
-        filename = QFileDialog().getOpenFileName(
-            self, "选择文件", "./", filter="图像文件(*.nii *.nii.gz)"
-        )
+        filename = QFileDialog().getOpenFileName(self, "选择文件", "./", filter="图像文件(*.nii *.nii.gz)")
         if len(filename[0]) == 0:
             return
 
@@ -74,9 +70,7 @@ class win(QWidget, Ui_Displayer2D):
         self.sliceCurrent.setText(str(self.image.position["s"]))
         self.sliceTotal.setText(str(self.image.size["s"]))
 
-        self.showImage(
-            self.image.plane_s(), self.imageDisplay.width(), self.imageDisplay.height()
-        )
+        self.showImage(self.image.plane_s(), self.imageDisplay.width(), self.imageDisplay.height())
 
     def imageScrollFunction(self, value):
         if self.image is not None:
