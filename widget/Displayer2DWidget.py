@@ -8,12 +8,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from entity import MedicalImage
 from ui.Ui_Displayer2D import Ui_Displayer2D
-from utils.image import Image
 from widget.ImageWidget import ImageWidget
 
 
-class win(QWidget, Ui_Displayer2D):
+class Displayer2DWidget(QWidget, Ui_Displayer2D):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -51,7 +51,9 @@ class win(QWidget, Ui_Displayer2D):
             array.shape[1],
             array.shape[0],
             array.shape[1] * self.image.channel,
-            QImage.Format.Format_Grayscale8 if self.image.channel == 1 else QImage.Format.Format_RGB888,
+            QImage.Format.Format_Grayscale8
+            if self.image.channel == 1
+            else QImage.Format.Format_RGB888,
         )
         self.pixmap = QPixmap.fromImage(q_image)
         self.imageWidget = ImageWidget(self.pixmap)
@@ -59,18 +61,22 @@ class win(QWidget, Ui_Displayer2D):
         self.scene.addItem(self.imageWidget)
 
     def openFile(self):
-        filename = QFileDialog().getOpenFileName(self, "选择文件", "./", filter="图像文件(*.nii *.nii.gz)")
+        filename = QFileDialog().getOpenFileName(
+            self, "选择文件", "./", filter="图像文件(*.nii *.nii.gz)"
+        )
         if len(filename[0]) == 0:
             return
 
-        self.image = Image(filename=filename[0])
+        self.image = MedicalImage(filename[0])
         self.imageScroll.setSingleStep(1)
         self.imageScroll.setRange(1, self.image.size["s"])
         self.imageScroll.setEnabled(True)
         self.sliceCurrent.setText(str(self.image.position["s"]))
         self.sliceTotal.setText(str(self.image.size["s"]))
 
-        self.showImage(self.image.plane_s(), self.imageDisplay.width(), self.imageDisplay.height())
+        self.showImage(
+            self.image.plane_s(), self.imageDisplay.width(), self.imageDisplay.height()
+        )
 
     def imageScrollFunction(self, value):
         if self.image is not None:
@@ -87,6 +93,6 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    MainWindow = win()
+    MainWindow = Displayer2DWidget()
     MainWindow.show()
     sys.exit(app.exec())
