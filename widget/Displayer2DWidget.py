@@ -1,23 +1,18 @@
 import numpy as np
 from PyQt6.QtGui import QColor, QImage, QPixmap
-from PyQt6.QtWidgets import (
-    QApplication,
-    QFileDialog,
-    QGraphicsScene,
-    QGraphicsView,
-    QWidget,
-)
+from PyQt6.QtWidgets import QApplication, QFileDialog, QGraphicsScene, QGraphicsView, QWidget
 
-from entity import MedicalImage
+from entity import ReadImage, ReadNIFTI
 from ui.Ui_Displayer2D import Ui_Displayer2D
 from widget.ImageWidget import ImageWidget
 
 
 class Displayer2DWidget(QWidget, Ui_Displayer2D):
-    def __init__(self):
+    def __init__(self, view: str = "t"):
         super().__init__()
         self.setupUi(self)
         self.image = None
+        self.view = view
 
         self.initView()
         self.initWidgets()
@@ -51,9 +46,7 @@ class Displayer2DWidget(QWidget, Ui_Displayer2D):
             array.shape[1],
             array.shape[0],
             array.shape[1] * self.image.channel,
-            QImage.Format.Format_Grayscale8
-            if self.image.channel == 1
-            else QImage.Format.Format_RGB888,
+            QImage.Format.Format_Grayscale8 if self.image.channel == 1 else QImage.Format.Format_RGB888,
         )
         self.pixmap = QPixmap.fromImage(q_image)
         self.imageWidget = ImageWidget(self.pixmap)
@@ -61,29 +54,25 @@ class Displayer2DWidget(QWidget, Ui_Displayer2D):
         self.scene.addItem(self.imageWidget)
 
     def openFile(self):
-        filename = QFileDialog().getOpenFileName(
-            self, "选择文件", "./", filter="图像文件(*.nii *.nii.gz)"
-        )
+        filename = QFileDialog().getOpenFileName(self, "选择文件", "./", filter="图像文件(*.nii *.nii.gz)")
         if len(filename[0]) == 0:
             return
 
-        self.image = MedicalImage(filename[0])
+        self.image = ReadNIFTI(filename[0], True)
         self.imageScroll.setSingleStep(1)
-        self.imageScroll.setRange(1, self.image.size["s"])
+        self.imageScroll.setRange(1, self.image.size[self.view])
         self.imageScroll.setEnabled(True)
-        self.sliceCurrent.setText(str(self.image.position["s"]))
-        self.sliceTotal.setText(str(self.image.size["s"]))
+        self.sliceCurrent.setText(str(self.image.position[self.view]))
+        self.sliceTotal.setText(str(self.image.size[self.view]))
 
-        self.showImage(
-            self.image.plane_s(), self.imageDisplay.width(), self.imageDisplay.height()
-        )
+        self.showImage(self.image.plane(self.view), self.imageDisplay.width(), self.imageDisplay.height())
 
     def imageScrollFunction(self, value):
         if self.image is not None:
             self.sliceCurrent.setText(str(value))
-            self.image.position["s"] = value
+            self.image.position[self.view] = value
             self.showImage(
-                self.image.plane_s(),
+                self.image.plane(self.view),
                 self.imageDisplay.width(),
                 self.imageDisplay.height(),
             )
