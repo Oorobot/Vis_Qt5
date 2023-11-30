@@ -8,6 +8,9 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
+from widget.GraphicsScene import GraphicsScene
+from widget.GraphicsView import GraphicsView
+
 
 class Ui_Displayer2D(object):
     def setupUi(self, Displayer2D):
@@ -27,7 +30,8 @@ class Ui_Displayer2D(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout1 = QtWidgets.QHBoxLayout()
         self.horizontalLayout1.setObjectName("horizontalLayout1")
-        self.imageDisplay = QtWidgets.QGraphicsView(parent=Displayer2D)
+        scene = GraphicsScene()
+        self.imageDisplay = GraphicsView(scene, Displayer2D)
         self.imageDisplay.setObjectName("imageDisplay")
         self.horizontalLayout1.addWidget(self.imageDisplay)
         self.imageScroll = QtWidgets.QScrollBar(parent=Displayer2D)
