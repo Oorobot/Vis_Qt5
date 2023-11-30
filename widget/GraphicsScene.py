@@ -1,5 +1,5 @@
 from PyQt6.QtGui import QBrush, QColor
-from PyQt6.QtWidgets import QGraphicsScene, QWidget
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsSceneDragDropEvent, QWidget
 
 
 class GraphicsScene(QGraphicsScene):

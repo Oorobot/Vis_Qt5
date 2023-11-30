@@ -1,4 +1,5 @@
 import os
+from glob import glob
 
 import numpy as np
 import SimpleITK as sitk
@@ -241,21 +242,15 @@ def ReadDICOM(file: str):
 
 def ReadImage(file: str):
     _, ext = os.path.splitext(file)
-    if ext == ".dcm":
+    if file.endswith(".dcm"):
         return ReadDICOM(file)
-    elif ext == ".gz":
-        _, _ext = os.path.join(_)
-        if _ext == ".nii":
-            return ReadNIFTI(file)
-    elif ext == ".nii":
+    elif file.endswith((".nii", ".nii.gz")):
         return ReadNIFTI(file)
     else:
         raise Exception("not support {} format file.".format(ext))
 
 
 if __name__ == "__main__":
-    from glob import glob
-
     file = r"DATA\001\ImageFileName000.dcm"
     series_RGB = ReadDICOM(file)
     # file = r"DATA\001\CT\ImageFileName000.dcm"

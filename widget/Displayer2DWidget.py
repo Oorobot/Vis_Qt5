@@ -1,5 +1,6 @@
 import numpy as np
-from PyQt6.QtGui import QImage, QPixmap
+from PyQt6 import QtGui
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QImage, QPixmap
 from PyQt6.QtWidgets import QApplication, QFileDialog, QWidget
 
 from entity import ReadImage, ReadNIFTI
@@ -17,12 +18,6 @@ class Displayer2DWidget(QWidget, Ui_Displayer2D):
         self.pixmap: QPixmap = None
         self.imageItem: ImageItem = None
         self.scene = self.imageDisplay.scene()
-        self.imageDisplay.setSceneRect(
-            -self.imageDisplay.width() / 2,
-            -self.imageDisplay.height() / 2,
-            self.imageDisplay.width(),
-            self.imageDisplay.height(),
-        )
         self.initWidgets()
 
     def initWidgets(self):
@@ -31,10 +26,6 @@ class Displayer2DWidget(QWidget, Ui_Displayer2D):
         self.imageScroll.setEnabled(False)
 
     def showImage(self, array: np.ndarray, view_width: int, view_height: int):
-        if self.imageItem is not None:
-            x, y = self.imageItem.x(), self.imageItem.y()
-        else:
-            x, y = 0.0, 0.0
         self.scene.clear()
         q_image = QImage(
             array.data.tobytes(),
@@ -47,7 +38,6 @@ class Displayer2DWidget(QWidget, Ui_Displayer2D):
         self.imageItem = ImageItem(self.pixmap)
         self.imageItem.setQGraphicsViewWH(view_width, view_height)
         self.scene.addItem(self.imageItem)
-        self.imageItem.moveBy(x, y)
 
     def openFile(self):
         filename = QFileDialog().getOpenFileName(self, "选择文件", "./", filter="图像文件(*.nii *.nii.gz)")

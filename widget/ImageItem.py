@@ -17,9 +17,6 @@ class ImageItem(QGraphicsPixmapItem):
         self._w, self._h = self.pixmap().width(), self.pixmap().height()
         self._left, self._top = -self._w / 2, -self._h / 2
 
-        # 可拖动
-        self.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
-
     def boundingRect(self) -> QRectF:
         return QRectF(self._left, self._top, self._w, self._h)
 
@@ -35,4 +32,3 @@ class ImageItem(QGraphicsPixmapItem):
     def reset(self):
         scale_factor = min(self._view_w * 1.0 / self._w, self._view_h * 1.0 / self._h)
         self.setScale(scale_factor)
-        self.setPos(0, 0)
