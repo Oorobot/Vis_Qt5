@@ -39,14 +39,13 @@ class CollapsibleChild(QWidget):
     def __init__(self, parent: QWidget, uid: str, image: MedicalImage) -> None:
         # 定义成员属性
         self._uid: str = ""
-        self._text: QLabel = None
+        self._text: QLabel = QLabel()
 
         # 初始化
         super().__init__(parent)
         self._uid = uid
 
         self._radioBtn = QRadioButton()
-        self._text = QLabel()
         self._text.setText(image.description if image is not None else "UNKNOWN")
         self._image = image
         self.setVisible(False)
@@ -55,13 +54,12 @@ class CollapsibleChild(QWidget):
     def setupUI(self):
         self.setFixedHeight(20)
         self._radioBtn.setFixedSize(20, 20)
-        self._text.setMinimumWidth(80)
+        self._text.setMinimumWidth(260)
         layout = QHBoxLayout()
         spacer = QSpacerItem(30, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         layout.addItem(spacer)
         layout.addWidget(self._radioBtn)
         layout.addWidget(self._text)
-        layout.addStretch
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 5, 0)
         self.setLayout(layout)
