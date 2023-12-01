@@ -1,17 +1,61 @@
-from PyQt6 import QtCore, QtGui
-from PyQt6.QtCore import QRectF, Qt
-from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QPainter, QResizeEvent, QWheelEvent
-from PyQt6.QtWidgets import QGraphicsView, QWidget
+from typing import Union
 
-from entity import ReadImage
-from widget.GraphicsScene import GraphicsScene
-from widget.ImageItem import ImageItem
+import numpy as np
+from PyQt6.QtCore import QRectF, Qt
+from PyQt6.QtGui import QBrush, QColor, QImage, QPainter, QPixmap, QResizeEvent, QWheelEvent
+from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QWidget
+
+from entity import MedicalImage
+
+
+class ImageItem(QGraphicsPixmapItem):
+    def __init__(self, pixmap: QPixmap) -> None:
+        # 定义成员属性
+        self._left, self._top, self._w, self._h = -1.0, -1.0, 1.0, 1.0
+        self._view_w, self._view_h = 1.0, 1.0
+
+        # 初始化
+        super(ImageItem, self).__init__(pixmap)
+
+        # 属性
+        self._w, self._h = self.pixmap().width(), self.pixmap().height()
+        self._left, self._top = -self._w / 2, -self._h / 2
+
+    def boundingRect(self) -> QRectF:
+        return QRectF(self._left, self._top, self._w, self._h)
+
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: Union[QWidget, None]) -> None:
+        self.setOffset(self._left, self._top)
+        painter.drawPixmap(self._left, self._top, self.pixmap())
+
+    def setQGraphicsViewWH(self, w: float, h: float):
+        self._view_w, self._view_h = w, h
+        scale_factor = min(self._view_w * 1.0 / self._w, self._view_h * 1.0 / self._h)
+        self.setScale(scale_factor)
+
+    def reset(self):
+        scale_factor = min(self._view_w * 1.0 / self._w, self._view_h * 1.0 / self._h)
+        self.setScale(scale_factor)
+
+
+class GraphicsScene(QGraphicsScene):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        # 设置背景为黑色
+        self.setBackgroundBrush(QBrush(QColor("#000000")))
+
+    def setBackGroudColor(self, color: QColor):
+        self.setBackgroundBrush(QBrush(color))
 
 
 class GraphicsView(QGraphicsView):
-    _image, _label = None, None
-
     def __init__(self, scene: GraphicsScene, parent: QWidget = None):
+        # 定义成员属性
+        self._image, self._label = None, None
+        self._view = "t"
+
+        # 初始化
         super().__init__(parent)
 
         self.setScene(scene)
@@ -29,6 +73,8 @@ class GraphicsView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        # 设置拖动
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         # 设置缩放中心
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
@@ -62,5 +108,32 @@ class GraphicsView(QGraphicsView):
     def drawForeground(self, painter: QPainter, rect: QRectF) -> None:
         return super().drawForeground(painter, rect)
 
-    def setImageItem(self, fileName: str):
-        pass
+    def setView(self, view: str):
+        self._view = view
+
+    def setImageItem(self, image2D: np.ndarray):
+        # 清空 scene
+        self.scene().clear()
+
+        # 创建 ImageItem
+        imageQ = QImage(
+            image2D.data.tobytes(),
+            image2D.shape[1],
+            image2D.shape[0],
+            image2D.shape[1] * self._image.channel,
+            QImage.Format.Format_Grayscale8 if self._image.channel == 1 else QImage.Format.Format_RGB888,
+        )
+        pixmap = QPixmap.fromImage(imageQ)
+        imageItem = ImageItem(pixmap)
+        # 缩放至填满 view
+        imageItem.setQGraphicsViewWH(self.width(), self.height())
+        self.scene().addItem(imageItem)
+
+    def setImage(self, image: MedicalImage):
+        self._image = image
+        self.setImageItem(self._image.plane(self._view))
+
+    def changeSliceOfImage(self, value: int):
+        if self._image is not None:
+            self._image.position[self._view] = value
+            self.setImageItem(self._image.plane(self._view))

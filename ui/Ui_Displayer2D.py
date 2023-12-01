@@ -8,8 +8,7 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from widget.GraphicsScene import GraphicsScene
-from widget.GraphicsView import GraphicsView
+from widget.GraphicsView import GraphicsScene, GraphicsView
 
 
 class Ui_Displayer2D(object):
