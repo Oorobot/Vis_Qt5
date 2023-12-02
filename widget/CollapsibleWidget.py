@@ -29,10 +29,18 @@ class IconButton(QPushButton):
         layout = QHBoxLayout()
         self._icon = QLabel()
         self._icon.setScaledContents(True)
-        self._icon.setStyleSheet("QLabel{background-color:transparent}")
+        self._icon.setStyleSheet("background-color:transparent")
         self._icon.setPixmap(pixmap)
         layout.addWidget(self._icon)
         self.setLayout(layout)
+
+        # 样式
+        self.setObjectName("IconButton")
+        self.setStyleSheet(
+            "#IconButton{background-color:transparent;}"
+            "#IconButton:hover{background-color:rgba(71,141,141,0.4);}"
+            "#IconButton:pressed{background-color:rgba(174,238,238,0.4);}"
+        )
 
 
 class CollapsibleChild(QWidget):
@@ -44,33 +52,43 @@ class CollapsibleChild(QWidget):
         # 初始化
         super().__init__(parent)
         self._uid = uid
-
         self._radioBtn = QRadioButton()
-        self._text.setText(image.description if image is not None else "UNKNOWN")
+        self._radioBtn.setText(image.description if image is not None else "UNKNOWN")
         self._image = image
-        self.setVisible(False)
-        self.setupUI()
 
-    def setupUI(self):
         self.setFixedHeight(20)
-        self._radioBtn.setFixedSize(20, 20)
-        self._text.setMinimumWidth(260)
+        self.setMaximumWidth(175)
         layout = QHBoxLayout()
-        spacer = QSpacerItem(30, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        spacer = QSpacerItem(25, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         layout.addItem(spacer)
         layout.addWidget(self._radioBtn)
-        layout.addWidget(self._text)
         layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 5, 0)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
+        # 样式
+        self._radioBtn.setStyleSheet(
+            "#QRadioButton{background-color:transparent;}"
+            "#QRadioButton:hover{background-color:rgba(64,70,75,0.4);}"
+            "#QRadioButton:pressed{background-color:rgba(119,136,153,0.4);}"
+        )
+        self.setObjectName("CollapsibleChild")
+        self.setStyleSheet(
+            "#CollapsibleChild{background-color:transparent;}"
+            "#CollapsibleChild:hover{background-color:rgba(64,70,75,0.4);}"
+            "#CollapsibleChild:pressed{background-color:rgba(119,136,153,0.4);}"
+        )
 
-class CollapsibleButton(QPushButton):
+        # 初始隐藏
+        self.setVisible(False)
+
+
+class CollapsibleWidget(QWidget):
     def __init__(self, uid: str, dictImage: dict, parent: QWidget = None):
         # 定义成员属性
         self._uid: str = None
-        self._icon: QLabel = None
-        self._text: QLabel = None
+        self._icon: QLabel = QLabel()
+        self._text: QLabel = QLabel()
         self._children: List[CollapsibleChild] = []
         self._children_uid: List[str] = []
         self._children_visible: bool = False
@@ -81,41 +99,43 @@ class CollapsibleButton(QPushButton):
         self._uid = uid
 
         # 图标
-        self._icon = QLabel()
         self._icon.setFixedWidth(20)
         self._icon.setFixedHeight(20)
         self._icon.setScaledContents(True)
-        self._icon.setStyleSheet("QLabel{background-color:transparent}")
+        self._icon.setStyleSheet("background-color:transparent")
         self._icon.setPixmap(QPixmap("resource/collapse.png"))
 
         # 文字
-        self._text = QLabel()
-        self._text.setStyleSheet("QLabel{background-color:transparent}")
+        self._text.setStyleSheet("background-color:transparent")
         self._text.setText(self._uid.split("_")[-1])
 
-        # 布局
+        # 主布局
         layoutMain = QVBoxLayout()
         layoutMain.setSpacing(1)
         layoutMain.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layoutMain)
 
+        # 可折叠按钮
+        self.collapsibleBtn = QPushButton()
         layoutBtn = QHBoxLayout()
         layoutBtn.addWidget(self._icon)
         layoutBtn.addWidget(self._text)
         layoutBtn.setContentsMargins(0, 0, 0, 0)
         layoutBtn.setSpacing(5)
-        layoutMain.addLayout(layoutBtn)
+        self.collapsibleBtn.setLayout(layoutBtn)
+        layoutMain.addWidget(self.collapsibleBtn)
 
-        # 设置自身样式
-        self.setFixedHeight(30)
-        self.setObjectName("CollapsibleButton")
-        self.setStyleSheet(
+        # 设置 collapsibleBtn 样式
+        self.collapsibleBtn.setFixedHeight(30)
+        self.collapsibleBtn.setMaximumWidth(250)
+        self.collapsibleBtn.setObjectName("CollapsibleButton")
+        self.collapsibleBtn.setStyleSheet(
             "#CollapsibleButton{background-color:transparent}"
-            "#CollapsibleButton:hover{background-color:rgba(195,195,195,0.4)}"
+            "#CollapsibleButton:hover{background-color:rgba(51,51,51,0.4)}"
             "#CollapsibleButton:pressed{background-color:rgba(127,127,127,0.4)}"
         )
 
-        # 添加子组件
+        # 子组件
         self.layoutChildren = QVBoxLayout()
         self.layoutChildren.setSpacing(0)
         self.layoutChildren.setContentsMargins(0, 0, 0, 0)
@@ -123,7 +143,7 @@ class CollapsibleButton(QPushButton):
         self.addChildren(dictImage)
 
         # 绑定事件
-        self.clicked.connect(self.clickedFunc)
+        self.collapsibleBtn.clicked.connect(self.clickedFunc)
 
     def addChildren(self, dictImage: dict) -> None:
         for i, d in dictImage.items():
@@ -148,7 +168,7 @@ class CollapsibleButton(QPushButton):
             child.setVisible(self._children_visible)
 
 
-class CollapsibleWidget(QWidget):
+class Sidebar(QWidget):
     def __init__(self, parent: QWidget = None) -> None:
         # 定义成员属性
         self._uid = {}
@@ -178,17 +198,14 @@ class CollapsibleWidget(QWidget):
         layoutBtn.addWidget(self.openBtn)
         layoutBtn.addWidget(self.display2DBtn)
         layoutBtn.addWidget(self.display3DBtn)
-
         layoutMain.addLayout(layoutBtn)
+
         # BtnList
         self.layoutCBtn = QVBoxLayout()
         self.layoutCBtn.setSpacing(0)
         self.layoutCBtn.setContentsMargins(0, 0, 0, 0)
-        # for uid, dictImage in uidDictImage.items():
-        #     collapsibleButton = CollapsibleButton(uid, dictImage)
-        #     self.layoutCBtn.addWidget(collapsibleButton)
-
         layoutMain.addLayout(self.layoutCBtn)
+
         # Strech
         spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         layoutMain.addItem(spacer)
@@ -220,7 +237,7 @@ class CollapsibleWidget(QWidget):
             if uid in self._uid:
                 self._uid[uid].addChildren(dictImage)
                 continue
-            collapsibleButton = CollapsibleButton(uid, dictImage)
+            collapsibleButton = CollapsibleWidget(uid, dictImage)
             self.layoutCBtn.addWidget(collapsibleButton)
             self._uid[uid] = collapsibleButton
 
@@ -247,22 +264,6 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    uidDictImage = {
-        "123_nieliangbing": {"1_CT": None, "2_PT": None},
-        "456_peisiqi": {"1_CT": None, "2_PT": None},
-        "1_peisiqi": {"1_CT": None, "2_PT": None},
-        "2_peisiqi": {"1_CT": None, "2_PT": None},
-        "3_peisiqi": {"1_CT": None, "2_PT": None},
-        "4_peisiqi": {"1_CT": None, "2_PT": None},
-        "5_peisiqi": {"1_CT": None, "2_PT": None},
-        "6_peisiqi": {"1_CT": None, "2_PT": None},
-        "7_peisiqi": {"1_CT": None, "2_PT": None},
-        "8_peisiqi": {"1_CT": None, "2_PT": None},
-        "9_peisiqi": {"1_CT": None, "2_PT": None},
-        "10_peisiqi": {"1_CT": None, "2_PT": None},
-        "11_peisiqi": {"1_CT": None, "2_PT": None},
-        "12_peisiqi": {"1_CT": None, "2_PT": None},
-    }
-    MainWindow = CollapsibleWidget()
+    MainWindow = Sidebar()
     MainWindow.show()
     sys.exit(app.exec())
