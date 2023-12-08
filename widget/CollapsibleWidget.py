@@ -153,6 +153,9 @@ class CollapsibleWidget(QWidget):
             self.layoutChildren.addWidget(child)
             self._children.append(child)
             self._children_uid.append(i)
+            child.setVisible(self._children_visible)
+            if self._children_visible:
+                self.setFixedHeight(30 + (len(self._children) * 20))
 
     def clickedFunc(self) -> None:
         if self._children_visible:

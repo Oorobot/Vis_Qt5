@@ -17,6 +17,13 @@
             "request": "launch",
             "module": "widget.CollapsibleWidget",
             "justMyCode": true
+        },
+        {
+            "name": "ImageDisplay",
+            "type": "python",
+            "request": "launch",
+            "module": "widget.GraphicsView",
+            "justMyCode": true
         }
     ]
 }
