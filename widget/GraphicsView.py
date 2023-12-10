@@ -3,8 +3,23 @@ from typing import Union
 import numpy as np
 from PyQt6 import QtCore
 from PyQt6.QtCore import QPointF, QRectF, Qt
-from PyQt6.QtGui import QAction, QBrush, QColor, QIcon, QImage, QPainter, QPen, QPixmap, QResizeEvent, QWheelEvent
+from PyQt6.QtGui import (
+    QAction,
+    QBrush,
+    QColor,
+    QDoubleValidator,
+    QFont,
+    QIcon,
+    QImage,
+    QPainter,
+    QPen,
+    QPixmap,
+    QResizeEvent,
+    QValidator,
+    QWheelEvent,
+)
 from PyQt6.QtWidgets import *
+from PyQt6.QtWidgets import QWidget
 
 from entity import MedicalImage, ReadNIFTI
 
@@ -51,7 +66,7 @@ class GraphicsScene(QGraphicsScene):
 
 
 class GraphicsView(QGraphicsView):
-    def __init__(self, scene: GraphicsScene, view: str, parent: QWidget = None):
+    def __init__(self, view: str, parent: QWidget = None):
         # 定义成员属性
         self._image, self._label = None, None
         self._view = view
@@ -60,6 +75,7 @@ class GraphicsView(QGraphicsView):
         # 初始化
         super().__init__(parent)
 
+        scene = GraphicsScene()
         self.setScene(scene)
 
         # 抗锯齿
@@ -220,22 +236,34 @@ class ImageDisplayer(QWidget):
         toolbar.addWidget(viewBtn)
         toolbar.addSeparator()
 
+        constrastBtn = QToolButton()
+        constrastBtn.setText("对比度")
+        constrastBtn.setIcon(QIcon("resource/constrast.png"))
+        constrastBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.subWindowConstrast = SubWindowConstrast()
+        toolbar.addWidget(constrastBtn)
+        toolbar.addSeparator()
+
         toolInfoLayout = QHBoxLayout()
         toolInfoLayout.addWidget(toolbar)
         toolInfoLayout.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
 
+        font = QFont("SimSun", 14)
         self.viewInfo = QLabel()
         self.viewInfo.setText(self.VIEW_NAME["t"])
         self.viewInfo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.viewInfo.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
+        self.viewInfo.setFont(font)
         self.slideInfo = QLabel()
         self.slideInfo.setText("{:0>4d}|{:0>4d}".format(0, 0))
         self.slideInfo.setFixedWidth(100)
-        self.viewInfo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.slideInfo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.slideInfo.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
+        self.slideInfo.setFont(font)
         toolInfoLayout.addWidget(self.viewInfo)
         toolInfoLayout.addWidget(self.slideInfo)
 
-        scene = QGraphicsScene()
-        self.view = GraphicsView(scene, "t", self)
+        self.view = GraphicsView("t", self)
 
         layout = QVBoxLayout()
         layout.addLayout(toolInfoLayout)
@@ -250,6 +278,7 @@ class ImageDisplayer(QWidget):
         dragBtn.clicked.connect(self.activateDragMode)
         resizeBtn.clicked.connect(self.activateResizeMode)
         slideBtn.clicked.connect(self.activateSlideMode)
+        constrastBtn.clicked.connect(self.activateConstrastWindow)
 
         viewS.triggered.connect(self.setViewS)
         viewC.triggered.connect(self.setViewC)
@@ -275,6 +304,17 @@ class ImageDisplayer(QWidget):
     def activateSlideMode(self):
         self.view.resizeOrSlide = False
 
+    # 对比度
+    def activateConstrastWindow(self):
+        self.subWindowConstrast.show()
+        self.subWindowConstrast.constrastValue.connect(self.adjustConstrast)
+
+    # 调整对比度
+    def adjustConstrast(self, mi, ma):
+        if self.view._image is not None:
+            self.view._image.normlize(mi, ma)
+            self.view.setImageItem(self.view._image.plane(self.view._view))
+
     def setViewS(self):
         self.view.setView("s")
         self.viewInfo.setText(self.VIEW_NAME["s"])
@@ -287,6 +327,126 @@ class ImageDisplayer(QWidget):
         self.view.setView("t")
         self.viewInfo.setText(self.VIEW_NAME["t"])
 
+    def setImage(self, image: MedicalImage):
+        mi, ma = image.array.min(), image.array.max()
+        self.subWindowConstrast.editMin.setText(f"{mi:.2f}")
+        self.subWindowConstrast.editMax.setText(f"{ma:.2f}")
+        self.subWindowConstrast.editWindowLevel.setText(f"{(mi + ma) / 2:.2f}")
+        self.subWindowConstrast.editWindowWidth.setText(f"{ma- mi:.2f}")
+        self.view.setImage(image)
+
+
+class SubWindowConstrast(QWidget):
+    constrastValue = QtCore.pyqtSignal(float, float)
+
+    def __init__(self, mi=0.0, ma=0.0, parent: QWidget = None) -> None:
+        super().__init__(parent)
+        self.resize(300, 100)
+
+        self.setWindowTitle("对比度")
+        validator = QDoubleValidator(self)
+
+        labelMin = QLabel()
+        labelMin.setText("最小值")
+        labelMin.setFixedWidth(40)
+        labelMin.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.editMin = QLineEdit()
+        self.editMin.setText(str(mi))
+        self.editMin.setFixedWidth(80)
+        self.editMin.setValidator(validator)
+
+        labelMax = QLabel()
+        labelMax.setText("最大值")
+        labelMax.setFixedWidth(40)
+        labelMax.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.editMax = QLineEdit()
+        self.editMax.setText(str(ma))
+        self.editMax.setFixedWidth(80)
+        self.editMax.setValidator(validator)
+
+        layout1 = QHBoxLayout()
+        layout1.setSpacing(0)
+        layout1.setContentsMargins(0, 0, 10, 0)
+        layout1.addWidget(labelMin)
+        layout1.addWidget(self.editMin)
+        layout1.addWidget(labelMax)
+        layout1.addWidget(self.editMax)
+
+        labelWindowLevel = QLabel()
+        labelWindowLevel.setText("窗位")
+        labelWindowLevel.setFixedWidth(40)
+        labelWindowLevel.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.editWindowLevel = QLineEdit()
+        self.editWindowLevel.setText(str((mi + ma) / 2))
+        self.editWindowLevel.setFixedWidth(80)
+        self.editWindowLevel.setValidator(validator)
+
+        labelWindowWidth = QLabel()
+        labelWindowWidth.setText("窗宽")
+        labelWindowWidth.setFixedWidth(40)
+        labelWindowWidth.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.editWindowWidth = QLineEdit()
+        self.editWindowWidth.setText(str(ma - mi))
+        self.editWindowWidth.setFixedWidth(80)
+        self.editWindowWidth.setValidator(validator)
+
+        layout2 = QHBoxLayout()
+        layout2.setSpacing(0)
+        layout2.setContentsMargins(0, 0, 10, 0)
+        layout2.addWidget(labelWindowLevel)
+        layout2.addWidget(self.editWindowLevel)
+        layout2.addWidget(labelWindowWidth)
+        layout2.addWidget(self.editWindowWidth)
+
+        btn = QPushButton()
+        btn.setText("确定")
+        btn.setFixedWidth(80)
+
+        layout = QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(layout1)
+        layout.addLayout(layout2)
+        layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.setLayout(layout)
+
+        #
+        self.editMax.editingFinished.connect(lambda: self.valueChanged("min_max"))
+        self.editMin.editingFinished.connect(lambda: self.valueChanged("min_max"))
+
+        #
+        self.editWindowLevel.editingFinished.connect(lambda: self.valueChanged("level_width"))
+        self.editWindowWidth.editingFinished.connect(lambda: self.valueChanged("level_width"))
+
+        #
+        btn.clicked.connect(self.clicked)
+
+    def valueChanged(self, param: str):
+        if param == "min_max":
+            mi = 0.0 if len(self.editMin.text()) == 0 else float(self.editMin.text())
+            ma = 0.0 if len(self.editMin.text()) == 0 else float(self.editMax.text())
+            if mi > ma:
+                ma = mi
+            self.editMin.setText(f"{mi:.2f}")
+            self.editMax.setText(f"{ma:.2f}")
+            self.editWindowLevel.setText(f"{(ma + mi) / 2:.2f}")
+            self.editWindowWidth.setText(f"{ma - mi:.2f}")
+        elif param == "level_width":
+            level = 0.0 if len(self.editWindowLevel.text()) == 0 else float(self.editWindowLevel.text())
+            width = 0.0 if len(self.editWindowWidth.text()) == 0 else float(self.editWindowWidth.text())
+            self.editMin.setText(f"{level - width / 2:.2f}")
+            self.editMax.setText(f"{level + width / 2:.2f}")
+            self.editWindowLevel.setText(f"{level:.2f}")
+            self.editWindowWidth.setText(f"{width:.2f}")
+        else:
+            raise Exception(f"not supprot param = {param}")
+
+    def clicked(self):
+        mi, ma = float(self.editMin.text()), float(self.editMax.text())
+        self.constrastValue.emit(mi, ma)
+        self.close()
+
 
 if __name__ == "__main__":
     import sys
@@ -296,6 +456,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     MainWindow = ImageDisplayer()
     image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
-    MainWindow.view.setImage(image)
+    MainWindow.setImage(image)
     MainWindow.show()
     sys.exit(app.exec())
