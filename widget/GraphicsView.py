@@ -1,25 +1,9 @@
 from typing import Union
 
 import numpy as np
-from PyQt6 import QtCore
-from PyQt6.QtCore import QPointF, QRectF, Qt
-from PyQt6.QtGui import (
-    QAction,
-    QBrush,
-    QColor,
-    QDoubleValidator,
-    QFont,
-    QIcon,
-    QImage,
-    QPainter,
-    QPen,
-    QPixmap,
-    QResizeEvent,
-    QValidator,
-    QWheelEvent,
-)
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
-from PyQt6.QtWidgets import QWidget
 
 from entity import MedicalImage, ReadNIFTI
 
@@ -186,20 +170,20 @@ class ImageDisplayer(QWidget):
         toolbar.setFloatable(False)
 
         resetBtn = QToolButton()
-        resetBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        resetBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         resetBtn.setIcon(QIcon("resource/reset.png"))
         resetBtn.setText("复原")
         toolbar.addWidget(resetBtn)
         toolbar.addSeparator()
 
         arrowBtn = QToolButton()
-        arrowBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        arrowBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         arrowIcon = QIcon("resource/arrow.png")
         arrowBtn.setIcon(arrowIcon)
         arrowBtn.setText("普通")
         dragBtn = QToolButton()
         dragIcon = QIcon("resource/drag.png")
-        dragBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        dragBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         dragBtn.setText("拖动")
         dragBtn.setIcon(dragIcon)
 
@@ -209,12 +193,12 @@ class ImageDisplayer(QWidget):
 
         resizeBtn = QToolButton()
         resizeIcon = QIcon("resource/resize.png")
-        resizeBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        resizeBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         resizeBtn.setIcon(resizeIcon)
         resizeBtn.setText("缩放")
         slideBtn = QToolButton()
         slideIcon = QIcon("resource/slide.png")
-        slideBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        slideBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         slideBtn.setText("切换")
         slideBtn.setIcon(slideIcon)
 
@@ -225,7 +209,7 @@ class ImageDisplayer(QWidget):
         viewBtn = QToolButton()
         viewBtn.setAutoRaise(True)
         viewBtn.setIcon(QIcon("resource/view.png"))
-        viewBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        viewBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         viewSubMenu = QMenu()
         viewBtn.setText("视图")
         viewBtn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
@@ -239,7 +223,7 @@ class ImageDisplayer(QWidget):
         constrastBtn = QToolButton()
         constrastBtn.setText("对比度")
         constrastBtn.setIcon(QIcon("resource/constrast.png"))
-        constrastBtn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        constrastBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.subWindowConstrast = SubWindowConstrast()
         toolbar.addWidget(constrastBtn)
         toolbar.addSeparator()
@@ -248,16 +232,16 @@ class ImageDisplayer(QWidget):
         toolInfoLayout.addWidget(toolbar)
         toolInfoLayout.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
 
-        font = QFont("SimSun", 14)
+        font = QFont("黑体", 14)
         self.viewInfo = QLabel()
         self.viewInfo.setText(self.VIEW_NAME["t"])
-        self.viewInfo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.viewInfo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.viewInfo.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
         self.viewInfo.setFont(font)
         self.slideInfo = QLabel()
         self.slideInfo.setText("{:0>4d}|{:0>4d}".format(0, 0))
         self.slideInfo.setFixedWidth(100)
-        self.slideInfo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.slideInfo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.slideInfo.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
         self.slideInfo.setFont(font)
         toolInfoLayout.addWidget(self.viewInfo)
@@ -337,7 +321,7 @@ class ImageDisplayer(QWidget):
 
 
 class SubWindowConstrast(QWidget):
-    constrastValue = QtCore.pyqtSignal(float, float)
+    constrastValue = pyqtSignal(float, float)
 
     def __init__(self, mi=0.0, ma=0.0, parent: QWidget = None) -> None:
         super().__init__(parent)

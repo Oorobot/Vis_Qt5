@@ -1,46 +1,10 @@
-from typing import List
+from typing import Dict, List
 
-from PyQt6 import QtCore
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import (
-    QApplication,
-    QFileDialog,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QRadioButton,
-    QSizePolicy,
-    QSpacerItem,
-    QToolButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
 
 from entity import MedicalImage, ReadImage
-
-
-class IconButton(QPushButton):
-    def __init__(self, iconPath: str, parent: QWidget = None) -> None:
-        super().__init__(parent)
-        self.setFixedWidth(30)
-        self.setFixedHeight(30)
-
-        pixmap = QPixmap(iconPath)
-        layout = QHBoxLayout()
-        self._icon = QLabel()
-        self._icon.setScaledContents(True)
-        self._icon.setStyleSheet("background-color:transparent")
-        self._icon.setPixmap(pixmap)
-        layout.addWidget(self._icon)
-        self.setLayout(layout)
-
-        # 样式
-        self.setObjectName("IconButton")
-        self.setStyleSheet(
-            "#IconButton{background-color:transparent;}"
-            "#IconButton:hover{background-color:rgba(71,141,141,0.4);}"
-            "#IconButton:pressed{background-color:rgba(174,238,238,0.4);}"
-        )
 
 
 class CollapsibleChild(QWidget):
@@ -56,10 +20,10 @@ class CollapsibleChild(QWidget):
         self._radioBtn.setText(image.description if image is not None else "UNKNOWN")
         self._image = image
 
-        self.setFixedHeight(20)
-        self.setMaximumWidth(175)
+        self.setFixedHeight(30)
+        self.setMaximumWidth(250)
         layout = QHBoxLayout()
-        spacer = QSpacerItem(25, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        spacer = QSpacerItem(28, 30, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         layout.addItem(spacer)
         layout.addWidget(self._radioBtn)
         layout.setSpacing(0)
@@ -67,114 +31,114 @@ class CollapsibleChild(QWidget):
         self.setLayout(layout)
 
         # 样式
+        self._radioBtn.setObjectName("RadioButton")
         self._radioBtn.setStyleSheet(
-            "#QRadioButton{background-color:transparent;}"
-            "#QRadioButton:hover{background-color:rgba(64,70,75,0.4);}"
-            "#QRadioButton:pressed{background-color:rgba(119,136,153,0.4);}"
-        )
-        self.setObjectName("CollapsibleChild")
-        self.setStyleSheet(
-            "#CollapsibleChild{background-color:transparent;}"
-            "#CollapsibleChild:hover{background-color:rgba(64,70,75,0.4);}"
-            "#CollapsibleChild:pressed{background-color:rgba(119,136,153,0.4);}"
+            "#RadioButton{background-color:transparent;}"
+            "#RadioButton:hover{background-color:rgba(64,70,75,0.4);}"
+            "#RadioButton:pressed{background-color:rgba(119,136,153,0.4);}"
+            "#RadioButton:{font-family: 'Times New Roman'; font-size: 12px;}"
         )
 
         # 初始隐藏
         self.setVisible(False)
 
+        # 右键
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showCustomContextMenu)
+        self.contextMenu = QMenu()
+        delAction = QAction(QIcon("resource/delete.png"), "删除", self.contextMenu)
+        self.contextMenu.addAction(delAction)
+        delAction.triggered.connect(self.deleteSelf)
+
+    def showCustomContextMenu(self, pos):
+        self.contextMenu.show()
+        self.contextMenu.move(self.mapToGlobal(pos))
+
+    def deleteSelf(self):
+        if self.parent() is not None:
+            self.parent().removeChild(self._uid)
+
 
 class CollapsibleWidget(QWidget):
     def __init__(self, uid: str, dictImage: dict, parent: QWidget = None):
         # 定义成员属性
-        self._uid: str = None
-        self._icon: QLabel = QLabel()
-        self._text: QLabel = QLabel()
-        self._children: List[CollapsibleChild] = []
-        self._children_uid: List[str] = []
-        self._children_visible: bool = False
+        self._uid: str = uid
+        self._collapsible: bool = False
+        self._children: Dict[str, CollapsibleChild] = {}
 
         # 初始化
         super().__init__(parent)
-        # 唯一标识符
-        self._uid = uid
-
-        # 图标
-        self._icon.setFixedWidth(20)
-        self._icon.setFixedHeight(20)
-        self._icon.setScaledContents(True)
-        self._icon.setStyleSheet("background-color:transparent")
-        self._icon.setPixmap(QPixmap("resource/collapse.png"))
-
-        # 文字
-        self._text.setStyleSheet("background-color:transparent")
-        self._text.setText(self._uid.split("_")[-1])
 
         # 主布局
-        layoutMain = QVBoxLayout()
-        layoutMain.setSpacing(1)
-        layoutMain.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layoutMain)
+        layout = QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
 
         # 可折叠按钮
-        self.collapsibleBtn = QPushButton()
-        layoutBtn = QHBoxLayout()
-        layoutBtn.addWidget(self._icon)
-        layoutBtn.addWidget(self._text)
-        layoutBtn.setContentsMargins(0, 0, 0, 0)
-        layoutBtn.setSpacing(5)
-        self.collapsibleBtn.setLayout(layoutBtn)
-        layoutMain.addWidget(self.collapsibleBtn)
+        self.collapsibleButton = QToolButton(self)
+        self.collapsibleButton.setIcon(QIcon("resource/collapse.png"))
+        self.collapsibleButton.setText(self._uid.split("_")[-1])
+        layout.addWidget(self.collapsibleButton)
 
-        # 设置 collapsibleBtn 样式
-        self.collapsibleBtn.setFixedHeight(30)
-        self.collapsibleBtn.setMaximumWidth(250)
-        self.collapsibleBtn.setObjectName("CollapsibleButton")
-        self.collapsibleBtn.setStyleSheet(
+        # 样式
+        self.collapsibleButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.collapsibleButton.setFixedHeight(40)
+        self.collapsibleButton.setFixedWidth(250)
+        self.collapsibleButton.setIconSize(QSize(25, 25))
+        self.collapsibleButton.setObjectName("CollapsibleButton")
+        self.collapsibleButton.setStyleSheet(
             "#CollapsibleButton{background-color:transparent}"
             "#CollapsibleButton:hover{background-color:rgba(51,51,51,0.4)}"
             "#CollapsibleButton:pressed{background-color:rgba(127,127,127,0.4)}"
+            "#CollapsibleButton{font-family: 'Times New Roman'; font-size: 14px;}"
         )
 
-        # 子组件
-        self.layoutChildren = QVBoxLayout()
-        self.layoutChildren.setSpacing(0)
-        self.layoutChildren.setContentsMargins(0, 0, 0, 0)
-        layoutMain.addLayout(self.layoutChildren)
-        self.addChildren(dictImage)
-
         # 绑定事件
-        self.collapsibleBtn.clicked.connect(self.clickedFunc)
+        self.collapsibleButton.clicked.connect(self.clickedFunc)
+
+        # 添加 child
+        self.addChildren(dictImage)
 
     def addChildren(self, dictImage: dict) -> None:
         for i, d in dictImage.items():
-            if i in self._children_uid:
+            if i in self._children:
                 continue
             child = CollapsibleChild(self, i, d)
-            self.layoutChildren.addWidget(child)
-            self._children.append(child)
-            self._children_uid.append(i)
-            child.setVisible(self._children_visible)
-            if self._children_visible:
-                self.setFixedHeight(30 + (len(self._children) * 20))
+            child.setVisible(self._collapsible)
+            self._children[i] = child
+            self.layout().addWidget(child)
+            if self._collapsible:
+                self.setFixedHeight(40 + (len(self._children) * 30))
+
+    def removeChild(self, childUid: str):
+        _child = self._children.pop(childUid)
+        # 删除该子组件
+        _child.close()
+        _child.destroy()
+        if len(self._children) == 0 and self.parent() is not None:
+            self.parent().parent().removeCollapsibleWidget(self._uid)
+        else:
+            self.setFixedHeight(40 + (len(self._children) * 30))
 
     def clickedFunc(self) -> None:
-        if self._children_visible:
-            self._icon.setPixmap(QPixmap("resource/collapse.png"))
-            self.setFixedHeight(30)
-            for child in self._children:
+        if self._collapsible:
+            self.collapsibleButton.setIcon(QIcon("resource/collapse.png"))
+            self.setFixedHeight(40)
+            for child_uid, child in self._children.items():
                 child._radioBtn.setChecked(False)
         else:
-            self._icon.setPixmap(QPixmap("resource/expand.png"))
-            self.setFixedHeight(30 + (len(self._children) * 20))
-        self._children_visible = not self._children_visible
-        for child in self._children:
-            child.setVisible(self._children_visible)
+            self.collapsibleButton.setIcon(QIcon("resource/expand.png"))
+            self.setFixedHeight(40 + (len(self._children) * 30))
+        self._collapsible = not self._collapsible
+        for child_uid, child in self._children.items():
+            child.setVisible(self._collapsible)
 
 
 class Sidebar(QWidget):
     def __init__(self, parent: QWidget = None) -> None:
         # 定义成员属性
-        self._uid = {}
+        self._collapsibleWidgets: Dict[str, CollapsibleWidget] = {}
 
         # 初始化
         super().__init__(parent)
@@ -182,32 +146,60 @@ class Sidebar(QWidget):
 
         layout = QHBoxLayout()
 
-        self.widgetMain = QWidget()
         layoutMain = QVBoxLayout()
+        self.widgetMain = QWidget()
         self.widgetMain.setLayout(layoutMain)
-        # 创建三个按钮
-        self.openBtn = IconButton("resource/open.png")
-        self.openBtn.setToolTip("打开文件")
-        self.openBtn.setToolTipDuration(3000)
-        self.display2DBtn = IconButton("resource/display2d.png")
-        self.display2DBtn.setToolTip("2D浏览")
-        self.display2DBtn.setToolTipDuration(3000)
-        self.display3DBtn = IconButton("resource/display3d.png")
-        self.display3DBtn.setToolTip("3D浏览")
-        self.display3DBtn.setToolTipDuration(3000)
+        # 三个按钮
+        openBtn = QToolButton(self)
+        openBtn.setIcon(QIcon("resource/open.png"))
+        openBtn.setIconSize(QSize(30, 30))
+        openBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        openBtn.setToolTip("打开文件")
+        openBtn.setToolTipDuration(5000)
+        openBtn.setObjectName("openBtn")
+        openBtn.setStyleSheet(
+            "#openBtn{background-color:transparent;}"
+            "#openBtn:hover{background-color:rgba(71,141,141,0.4);}"
+            "#openBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        )
+        display2DBtn = QToolButton(self)
+        display2DBtn.setIcon(QIcon("resource/display2d.png"))
+        display2DBtn.setIconSize(QSize(30, 30))
+        display2DBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        display2DBtn.setToolTip("2D浏览")
+        display2DBtn.setToolTipDuration(5000)
+        display2DBtn.setObjectName("display2DBtn")
+        display2DBtn.setStyleSheet(
+            "#display2DBtn{background-color:transparent;}"
+            "#display2DBtn:hover{background-color:rgba(71,141,141,0.4);}"
+            "#display2DBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        )
+        display3DBtn = QToolButton(self)
+        display3DBtn.setIcon(QIcon("resource/display3d.png"))
+        display3DBtn.setIconSize(QSize(30, 30))
+        display3DBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        display3DBtn.setToolTip("3D浏览")
+        display3DBtn.setToolTipDuration(5000)
+        display3DBtn.setObjectName("display3DBtn")
+        display3DBtn.setStyleSheet(
+            "#display3DBtn{background-color:transparent;}"
+            "#display3DBtn:hover{background-color:rgba(71,141,141,0.4);}"
+            "#display3DBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        )
+
         layoutBtn = QHBoxLayout()
-        layoutBtn.setSpacing(20)
+        layoutBtn.setSpacing(40)
         layoutBtn.setContentsMargins(0, 0, 0, 0)
-        layoutBtn.addWidget(self.openBtn)
-        layoutBtn.addWidget(self.display2DBtn)
-        layoutBtn.addWidget(self.display3DBtn)
+        layoutBtn.addWidget(openBtn)
+        layoutBtn.addWidget(display2DBtn)
+        layoutBtn.addWidget(display3DBtn)
         layoutMain.addLayout(layoutBtn)
 
         # BtnList
-        self.layoutCBtn = QVBoxLayout()
-        self.layoutCBtn.setSpacing(0)
-        self.layoutCBtn.setContentsMargins(0, 0, 0, 0)
-        layoutMain.addLayout(self.layoutCBtn)
+        self.layoutCollapsibleButton = QVBoxLayout()
+        self.layoutCollapsibleButton.setSpacing(0)
+        self.layoutCollapsibleButton.setContentsMargins(0, 0, 0, 0)
+        layoutMain.addLayout(self.layoutCollapsibleButton)
 
         # Strech
         spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
@@ -216,41 +208,44 @@ class Sidebar(QWidget):
 
         # 侧边隐藏按钮
         self.hideBtn = QToolButton()
-        self.hideBtn.setArrowType(QtCore.Qt.ArrowType.LeftArrow)
+        self.hideBtn.setArrowType(Qt.ArrowType.LeftArrow)
         self.hideBtn.setFixedHeight(60)
         self.hideBtn.setFixedWidth(15)
         layoutHide = QVBoxLayout()
         layoutHide.setSpacing(0)
         layoutHide.setContentsMargins(0, 0, 0, 0)
-        spacer1Hide = QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        layoutHide.addItem(spacer1Hide)
+        layoutHide.addItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         layoutHide.addWidget(self.hideBtn)
-        spacer2Hide = QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        layoutHide.addItem(spacer2Hide)
+        layoutHide.addItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         layout.addLayout(layoutHide)
 
         self.setLayout(layout)
 
         # 绑定
         self.hideBtn.clicked.connect(self.hideBtnClickFunc)
-        self.openBtn.clicked.connect(self.openBthClickFunc)
+        openBtn.clicked.connect(self.openBthClickFunc)
 
     def addCollapsibleButton(self, uidDictImage: dict):
         for uid, dictImage in uidDictImage.items():
-            if uid in self._uid:
-                self._uid[uid].addChildren(dictImage)
+            if uid in self._collapsibleWidgets:
+                self._collapsibleWidgets[uid].addChildren(dictImage)
                 continue
-            collapsibleButton = CollapsibleWidget(uid, dictImage)
-            self.layoutCBtn.addWidget(collapsibleButton)
-            self._uid[uid] = collapsibleButton
+            collapsibleWidget = CollapsibleWidget(uid, dictImage, self)
+            self._collapsibleWidgets[uid] = collapsibleWidget
+            self.layoutCollapsibleButton.addWidget(collapsibleWidget)
+
+    def removeCollapsibleWidget(self, collapsibleWidgetUid):
+        _collapsibleWidget = self._collapsibleWidgets.pop(collapsibleWidgetUid)
+        _collapsibleWidget.close()
+        _collapsibleWidget.destroy()
 
     def hideBtnClickFunc(self):
         if self.widgetMain.isVisible():
             self.widgetMain.setVisible(False)
-            self.hideBtn.setArrowType(QtCore.Qt.ArrowType.RightArrow)
+            self.hideBtn.setArrowType(Qt.ArrowType.RightArrow)
         else:
             self.widgetMain.setVisible(True)
-            self.hideBtn.setArrowType(QtCore.Qt.ArrowType.LeftArrow)
+            self.hideBtn.setArrowType(Qt.ArrowType.LeftArrow)
 
     def openBthClickFunc(self):
         filename = QFileDialog().getOpenFileName(
