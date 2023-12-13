@@ -36,7 +36,7 @@ class CollapsibleChild(QWidget):
             "#RadioButton{background-color:transparent;}"
             "#RadioButton:hover{background-color:rgba(64,70,75,0.4);}"
             "#RadioButton:pressed{background-color:rgba(119,136,153,0.4);}"
-            "#RadioButton:{font-family: 'Times New Roman'; font-size: 12px;}"
+            "#RadioButton{font-family: 'Times New Roman'; font-size: 16px;}"
         )
 
         # 初始隐藏
@@ -50,6 +50,8 @@ class CollapsibleChild(QWidget):
         self.contextMenu.addAction(delAction)
         delAction.triggered.connect(self.deleteSelf)
 
+        self._radioBtn.toggled.connect(self.checkStateChange)
+
     def showCustomContextMenu(self, pos):
         self.contextMenu.show()
         self.contextMenu.move(self.mapToGlobal(pos))
@@ -57,6 +59,10 @@ class CollapsibleChild(QWidget):
     def deleteSelf(self):
         if self.parent() is not None:
             self.parent().removeChild(self._uid)
+
+    def checkStateChange(self, c):
+        if self.parent() is not None:
+            self.parent().childCheckStateChange(c, self._uid)
 
 
 class CollapsibleWidget(QWidget):
@@ -91,7 +97,7 @@ class CollapsibleWidget(QWidget):
             "#CollapsibleButton{background-color:transparent}"
             "#CollapsibleButton:hover{background-color:rgba(51,51,51,0.4)}"
             "#CollapsibleButton:pressed{background-color:rgba(127,127,127,0.4)}"
-            "#CollapsibleButton{font-family: 'Times New Roman'; font-size: 14px;}"
+            "#CollapsibleButton{font-family: 'Times New Roman'; font-size: 20px;}"
         )
 
         # 绑定事件
@@ -116,7 +122,7 @@ class CollapsibleWidget(QWidget):
         # 删除该子组件
         _child.close()
         _child.destroy()
-        if len(self._children) == 0 and self.parent() is not None:
+        if len(self._children) == 0 and self.parent() is not None and self.parent().parent() is not None:
             self.parent().parent().removeCollapsibleWidget(self._uid)
         else:
             self.setFixedHeight(40 + (len(self._children) * 30))
@@ -125,20 +131,25 @@ class CollapsibleWidget(QWidget):
         if self._collapsible:
             self.collapsibleButton.setIcon(QIcon("resource/collapse.png"))
             self.setFixedHeight(40)
-            for child_uid, child in self._children.items():
+            for child in self._children.values():
                 child._radioBtn.setChecked(False)
         else:
             self.collapsibleButton.setIcon(QIcon("resource/expand.png"))
             self.setFixedHeight(40 + (len(self._children) * 30))
         self._collapsible = not self._collapsible
-        for child_uid, child in self._children.items():
+        for child in self._children.values():
             child.setVisible(self._collapsible)
+
+    def childCheckStateChange(self, c: bool, childUid: str):
+        if self.parent() is not None and self.parent().parent() is not None:
+            self.parent().parent().childCheckStateChange(c, childUid, self._uid)
 
 
 class Sidebar(QWidget):
     def __init__(self, parent: QWidget = None) -> None:
         # 定义成员属性
         self._collapsibleWidgets: Dict[str, CollapsibleWidget] = {}
+        self._checkedCollapsibleChildren: List[str] = []
 
         # 初始化
         super().__init__(parent)
@@ -238,6 +249,21 @@ class Sidebar(QWidget):
         _collapsibleWidget = self._collapsibleWidgets.pop(collapsibleWidgetUid)
         _collapsibleWidget.close()
         _collapsibleWidget.destroy()
+
+    def childCheckStateChange(self, c: bool, childUid: str, widgetUid: str):
+        if c:
+            self._checkedCollapsibleChildren.append(widgetUid + "_^_" + childUid)
+            if self._checkedCollapsibleChildren[0].startswith(widgetUid):
+                while len(self._checkedCollapsibleChildren) >= 3:
+                    checked = self._checkedCollapsibleChildren[0]
+                    widgetUid, childUid = checked.split("_^_")
+                    self._collapsibleWidgets[widgetUid]._children[childUid]._radioBtn.setChecked(False)
+            else:
+                for checked in self._checkedCollapsibleChildren[:-1]:
+                    widgetUid, childUid = checked.split("_^_")
+                    self._collapsibleWidgets[widgetUid]._children[childUid]._radioBtn.setChecked(False)
+        else:
+            self._checkedCollapsibleChildren.remove(widgetUid + "_^_" + childUid)
 
     def hideBtnClickFunc(self):
         if self.widgetMain.isVisible():
