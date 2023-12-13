@@ -16,23 +16,22 @@ class CollapsibleChild(QWidget):
         # 初始化
         super().__init__(parent)
         self._uid = uid
-        self._radioBtn = QRadioButton()
-        self._radioBtn.setText(image.description if image is not None else "UNKNOWN")
         self._image = image
 
-        self.setFixedHeight(30)
-        self.setMaximumWidth(250)
+        self.radioBtn = QRadioButton()
+        self.radioBtn.setText(image.description if image is not None else "UNKNOWN")
         layout = QHBoxLayout()
-        spacer = QSpacerItem(28, 30, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        layout.addItem(spacer)
-        layout.addWidget(self._radioBtn)
+        layout.addItem(QSpacerItem(28, 30, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum))
+        layout.addWidget(self.radioBtn)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+        self.setFixedHeight(30)
+        self.setMaximumWidth(250)
 
         # 样式
-        self._radioBtn.setObjectName("RadioButton")
-        self._radioBtn.setStyleSheet(
+        self.radioBtn.setObjectName("RadioButton")
+        self.radioBtn.setStyleSheet(
             "#RadioButton{background-color:transparent;}"
             "#RadioButton:hover{background-color:rgba(64,70,75,0.4);}"
             "#RadioButton:pressed{background-color:rgba(119,136,153,0.4);}"
@@ -46,28 +45,29 @@ class CollapsibleChild(QWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showCustomContextMenu)
         self.contextMenu = QMenu()
-        delAction = QAction(QIcon("resource/delete.png"), "删除", self.contextMenu)
-        self.contextMenu.addAction(delAction)
-        delAction.triggered.connect(self.deleteSelf)
+        deleteAction = QAction(QIcon("resource/delete.png"), "删除", self.contextMenu)
+        self.contextMenu.addAction(deleteAction)
+        deleteAction.triggered.connect(self.deleteActionTriggered)
 
-        self._radioBtn.toggled.connect(self.checkStateChange)
+        self.radioBtn.toggled.connect(self.radioBtnToggled)
 
     def showCustomContextMenu(self, pos):
         self.contextMenu.show()
         self.contextMenu.move(self.mapToGlobal(pos))
 
-    def deleteSelf(self):
+    def deleteActionTriggered(self):
         if self.parent() is not None:
             self.parent().removeChild(self._uid)
 
-    def checkStateChange(self, c):
+    def radioBtnToggled(self, c: bool):
         if self.parent() is not None:
-            self.parent().childCheckStateChange(c, self._uid)
+            self.parent().childRadioBtnToggled(c, self._uid)
 
 
 class CollapsibleWidget(QWidget):
     def __init__(self, uid: str, dictImage: dict, parent: QWidget = None):
         # 定义成员属性
+        self._parent = parent
         self._uid: str = uid
         self._collapsible: bool = False
         self._children: Dict[str, CollapsibleChild] = {}
@@ -101,7 +101,7 @@ class CollapsibleWidget(QWidget):
         )
 
         # 绑定事件
-        self.collapsibleButton.clicked.connect(self.clickedFunc)
+        self.collapsibleButton.clicked.connect(self.collapsibleBtnClicked)
 
         # 添加 child
         self.addChildren(dictImage)
@@ -122,27 +122,27 @@ class CollapsibleWidget(QWidget):
         # 删除该子组件
         _child.close()
         _child.destroy()
-        if len(self._children) == 0 and self.parent() is not None and self.parent().parent() is not None:
-            self.parent().parent().removeCollapsibleWidget(self._uid)
+        if len(self._children) == 0 and self._parent is not None:
+            self._parent.removeCollapsibleWidget(self._uid)
         else:
             self.setFixedHeight(40 + (len(self._children) * 30))
 
-    def clickedFunc(self) -> None:
+    def childRadioBtnToggled(self, c: bool, childUid: str):
+        if self._parent is not None:
+            self._parent.childRadioBtnToggled(c, childUid, self._uid)
+
+    def collapsibleBtnClicked(self) -> None:
         if self._collapsible:
             self.collapsibleButton.setIcon(QIcon("resource/collapse.png"))
             self.setFixedHeight(40)
             for child in self._children.values():
-                child._radioBtn.setChecked(False)
+                child.radioBtn.setChecked(False)
         else:
             self.collapsibleButton.setIcon(QIcon("resource/expand.png"))
             self.setFixedHeight(40 + (len(self._children) * 30))
         self._collapsible = not self._collapsible
         for child in self._children.values():
             child.setVisible(self._collapsible)
-
-    def childCheckStateChange(self, c: bool, childUid: str):
-        if self.parent() is not None and self.parent().parent() is not None:
-            self.parent().parent().childCheckStateChange(c, childUid, self._uid)
 
 
 class Sidebar(QWidget):
@@ -153,14 +153,17 @@ class Sidebar(QWidget):
 
         # 初始化
         super().__init__(parent)
-        self.resize(300, 400)
+        self.setMinimumWidth(320)
+        self.setMinimumHeight(480)
 
         layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         layoutMain = QVBoxLayout()
         self.widgetMain = QWidget()
         self.widgetMain.setLayout(layoutMain)
-        # 三个按钮
+        layout.addWidget(self.widgetMain)
+        # 主按钮
         openBtn = QToolButton(self)
         openBtn.setIcon(QIcon("resource/open.png"))
         openBtn.setIconSize(QSize(30, 30))
@@ -197,28 +200,46 @@ class Sidebar(QWidget):
             "#display3DBtn:hover{background-color:rgba(71,141,141,0.4);}"
             "#display3DBtn:pressed{background-color:rgba(174,238,238,0.4);}"
         )
+        displayFusionBtn = QToolButton(self)
+        displayFusionBtn.setIcon(QIcon("resource/displayFusion.png"))
+        displayFusionBtn.setIconSize(QSize(30, 30))
+        displayFusionBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        displayFusionBtn.setToolTip("融合浏览")
+        displayFusionBtn.setToolTipDuration(5000)
+        displayFusionBtn.setObjectName("displayFusionBtn")
+        displayFusionBtn.setStyleSheet(
+            "#displayFusionBtn{background-color:transparent;}"
+            "#displayFusionBtn:hover{background-color:rgba(71,141,141,0.4);}"
+            "#displayFusionBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        )
 
         layoutBtn = QHBoxLayout()
-        layoutBtn.setSpacing(40)
+        layoutBtn.setSpacing(20)
         layoutBtn.setContentsMargins(0, 0, 0, 0)
         layoutBtn.addWidget(openBtn)
         layoutBtn.addWidget(display2DBtn)
         layoutBtn.addWidget(display3DBtn)
+        layoutBtn.addWidget(displayFusionBtn)
         layoutMain.addLayout(layoutBtn)
 
-        # BtnList
-        self.layoutCollapsibleButton = QVBoxLayout()
-        self.layoutCollapsibleButton.setSpacing(0)
-        self.layoutCollapsibleButton.setContentsMargins(0, 0, 0, 0)
-        layoutMain.addLayout(self.layoutCollapsibleButton)
-
-        # Strech
-        spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        layoutMain.addItem(spacer)
-        layout.addWidget(self.widgetMain)
+        # scrollArea
+        self.layoutCollapsibleButtons = QVBoxLayout()
+        self.layoutCollapsibleButtons.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.layoutCollapsibleButtons.setSpacing(0)
+        self.layoutCollapsibleButtons.setContentsMargins(0, 0, 0, 0)
+        scrollArea = QScrollArea(self)
+        scrollArea.setObjectName("scrollArea")
+        scrollArea.setStyleSheet("#scrollArea{background-color:transparent; border: none;}")
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scrollAreaContent = QWidget(scrollArea)
+        scrollAreaContent.setLayout(self.layoutCollapsibleButtons)
+        # 添加
+        scrollArea.setWidget(scrollAreaContent)
+        scrollArea.setWidgetResizable(True)
+        layoutMain.addWidget(scrollArea)
 
         # 侧边隐藏按钮
-        self.hideBtn = QToolButton()
+        self.hideBtn = QToolButton(self)
         self.hideBtn.setArrowType(Qt.ArrowType.LeftArrow)
         self.hideBtn.setFixedHeight(60)
         self.hideBtn.setFixedWidth(15)
@@ -233,47 +254,52 @@ class Sidebar(QWidget):
         self.setLayout(layout)
 
         # 绑定
-        self.hideBtn.clicked.connect(self.hideBtnClickFunc)
-        openBtn.clicked.connect(self.openBthClickFunc)
+        self.hideBtn.clicked.connect(self.hideBtnClicked)
+        openBtn.clicked.connect(self.openBtnClicked)
+        display2DBtn.clicked.connect(self.display2DBtnClicked)
+        display3DBtn.clicked.connect(self.display3DBtnClicked)
+        displayFusionBtn.clicked.connect(self.displayFusionBtnClicked)
 
-    def addCollapsibleButton(self, uidDictImage: dict):
+    def addCollapsibleButtons(self, uidDictImage: dict):
         for uid, dictImage in uidDictImage.items():
             if uid in self._collapsibleWidgets:
                 self._collapsibleWidgets[uid].addChildren(dictImage)
                 continue
             collapsibleWidget = CollapsibleWidget(uid, dictImage, self)
             self._collapsibleWidgets[uid] = collapsibleWidget
-            self.layoutCollapsibleButton.addWidget(collapsibleWidget)
+            self.layoutCollapsibleButtons.addWidget(collapsibleWidget)
 
     def removeCollapsibleWidget(self, collapsibleWidgetUid):
         _collapsibleWidget = self._collapsibleWidgets.pop(collapsibleWidgetUid)
         _collapsibleWidget.close()
         _collapsibleWidget.destroy()
 
-    def childCheckStateChange(self, c: bool, childUid: str, widgetUid: str):
+    def childRadioBtnToggled(self, c: bool, childUid: str, widgetUid: str):
         if c:
             self._checkedCollapsibleChildren.append(widgetUid + "_^_" + childUid)
             if self._checkedCollapsibleChildren[0].startswith(widgetUid):
                 while len(self._checkedCollapsibleChildren) >= 3:
                     checked = self._checkedCollapsibleChildren[0]
                     widgetUid, childUid = checked.split("_^_")
-                    self._collapsibleWidgets[widgetUid]._children[childUid]._radioBtn.setChecked(False)
+                    self._collapsibleWidgets[widgetUid]._children[childUid].radioBtn.setChecked(False)
             else:
                 for checked in self._checkedCollapsibleChildren[:-1]:
                     widgetUid, childUid = checked.split("_^_")
-                    self._collapsibleWidgets[widgetUid]._children[childUid]._radioBtn.setChecked(False)
+                    self._collapsibleWidgets[widgetUid]._children[childUid].radioBtn.setChecked(False)
         else:
             self._checkedCollapsibleChildren.remove(widgetUid + "_^_" + childUid)
 
-    def hideBtnClickFunc(self):
+    def hideBtnClicked(self):
         if self.widgetMain.isVisible():
             self.widgetMain.setVisible(False)
             self.hideBtn.setArrowType(Qt.ArrowType.RightArrow)
+            self.setMinimumWidth(0)
         else:
             self.widgetMain.setVisible(True)
             self.hideBtn.setArrowType(Qt.ArrowType.LeftArrow)
+            self.setMinimumWidth(320)
 
-    def openBthClickFunc(self):
+    def openBtnClicked(self):
         filename = QFileDialog().getOpenFileName(
             self, "选择文件", "./", filter="IMAGE(*.dcm *.nii *.nii.gz);;NIFTI(*.nii *.nii.gz);;DICOM(*.dcm)"
         )
@@ -281,7 +307,18 @@ class Sidebar(QWidget):
             return
 
         uidDictImage = ReadImage(filename[0])
-        self.addCollapsibleButton(uidDictImage)
+        self.addCollapsibleButtons(uidDictImage)
+
+    def display2DBtnClicked(self):
+        print("display2DBtnClicked...")
+
+    def display3DBtnClicked(self):
+        print("display3DBtnClicked...")
+
+    def displayFusionBtnClicked(self):
+        print("displayFusionBtnClicked...")
+        messageBox = QMessageBox(QMessageBox.Icon.Information, "提示", "该功能仅支持PET/CT融合成像。", QMessageBox.StandardButton.Ok)
+        messageBox.exec()
 
 
 if __name__ == "__main__":
