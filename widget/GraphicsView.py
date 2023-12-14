@@ -5,7 +5,7 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
-from entity import MedicalImage, ReadNIFTI
+from entity import MedicalImage, ReadDICOM, ReadNIFTI
 
 
 class ImageItem(QGraphicsPixmapItem):
@@ -28,15 +28,6 @@ class ImageItem(QGraphicsPixmapItem):
         self.setOffset(self._left, self._top)
         painter.drawPixmap(round(self._left), round(self._top), self.pixmap())
 
-    def setQGraphicsViewWH(self, w: float, h: float):
-        self._view_w, self._view_h = w, h
-        scale_factor = min(self._view_w * 1.0 / self._w, self._view_h * 1.0 / self._h)
-        self.setScale(scale_factor)
-
-    def reset(self):
-        scale_factor = min(self._view_w * 1.0 / self._w, self._view_h * 1.0 / self._h)
-        self.setScale(scale_factor)
-
 
 class GraphicsScene(QGraphicsScene):
     def __init__(self, parent: QWidget = None):
@@ -54,7 +45,7 @@ class GraphicsView(QGraphicsView):
         # 定义成员属性
         self._image, self._label = None, None
         self._view = view
-        self._imageItem, self_labelItem = None, None
+        self._imageItem, self._labelItem = None, None
 
         # 初始化
         super().__init__(parent)
@@ -79,11 +70,11 @@ class GraphicsView(QGraphicsView):
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
         self.resizeOrSlide = False
         # 设置缩放中心
-        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         # 缩放
         self._scale_factor = 1.05
-        self._scale_default = (1.0, 1.0)
+        self._scale_default = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         if self.resizeOrSlide:
@@ -103,14 +94,24 @@ class GraphicsView(QGraphicsView):
                     "{:0>4d}|{:0>4d}".format(self._image.position[self._view], self._image.size[self._view])
                 )
 
-    def setScaleDefault(self, sx, sy):
-        self._scale_default = (sx, sy)
-        self.scale(sx, sy)
-
     def reset(self) -> None:
-        # 恢复初始状态
+        size_s, size_c, size_t = (
+            self._image.size["s"] * self._image.spacing[0],
+            self._image.size["c"] * self._image.spacing[1],
+            self._image.size["t"] * self._image.spacing[2],
+        )
+        _scale_s, _scale_c, _scale_t = (
+            min(self.height() * 1.0 / size_t, self.width() * 1.0 / size_c),
+            min(self.height() * 1.0 / size_t, self.width() * 1.0 / size_s),
+            min(self.height() * 1.0 / size_c, self.width() * 1.0 / size_s),
+        )
+        self._scale_default = {
+            "s": (self._image.spacing[1] * _scale_s, self._image.spacing[2] * _scale_s),
+            "c": (self._image.spacing[0] * _scale_c, self._image.spacing[2] * _scale_c),
+            "t": (self._image.spacing[0] * _scale_t, self._image.spacing[1] * _scale_t),
+        }
         self.resetTransform()
-        self.scale(self._scale_default[0], self._scale_default[1])
+        self.scale(self._scale_default[self._view][0], self._scale_default[self._view][1])  # x, y
         self.centerOn(0, 0)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
@@ -121,10 +122,14 @@ class GraphicsView(QGraphicsView):
     # 切换视图
     def setView(self, view: str):
         self._view = view
+        self.reset()
         self.setImageItem(self._image.plane(self._view))
-        self.parent().slideInfo.setText(
-            "{:0>4d}|{:0>4d}".format(self._image.position[self._view], self._image.size[self._view])
-        )
+
+    # 切换图像
+    def setImage(self, image: MedicalImage):
+        self._image = image
+        self.reset()
+        self.setImageItem(self._image.plane(self._view))
 
     # 设置ImageItem
     def setImageItem(self, image2D: np.ndarray):
@@ -143,20 +148,28 @@ class GraphicsView(QGraphicsView):
         pixmap = QPixmap.fromImage(imageQ)
         self._imageItem = ImageItem(pixmap)
         # 缩放至填满 view
-        self._imageItem.setQGraphicsViewWH(self.width(), self.height())
+        self.reset()
         self.scene().addItem(self._imageItem)
-
-    # 切换图像
-    def setImage(self, image: MedicalImage):
-        self._image = image
-        self.setImageItem(self._image.plane(self._view))
-
-    def setLabelItem(self, label2D: np.ndarray):
-        pass
+        self.parent().slideInfo.setText(
+            "{:0>4d}|{:0>4d}".format(self._image.position[self._view], self._image.size[self._view])
+        )
 
     def setLabel(self, label: MedicalImage):
         self._label = label
-        self.setLabelItem(self._label.plane(self._view))
+        if (
+            self._label.size["s"] != self._image.size["s"]
+            or self._label.size["c"] != self._image.size["c"]
+            or self._label.size["t"] != self._image.size["t"]
+        ):
+            messageBox = QMessageBox(
+                QMessageBox.Icon.Warning, "警告", "分割图与图像的尺寸（size）不匹配。", QMessageBox.StandardButton.Close
+            )
+            messageBox.exec()
+        else:
+            self.setLabelItem(self._label.plane(self._view))
+
+    def setLabelItem(self, label2D: np.ndarray):
+        pass
 
 
 class ImageDisplayer(QWidget):
@@ -319,6 +332,9 @@ class ImageDisplayer(QWidget):
         self.subWindowConstrast.editWindowWidth.setText(f"{ma- mi:.2f}")
         self.view.setImage(image)
 
+    def setLabel(self, label: MedicalImage):
+        self.view.setLabel(label)
+
 
 class SubWindowConstrast(QWidget):
     constrastValue = pyqtSignal(float, float)
@@ -440,6 +456,12 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     MainWindow = ImageDisplayer()
     image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
+    # image = ReadDICOM(r"DATA\001\CT\ImageFileName000.dcm").popitem()
+    # image = image[1].popitem()
+    # image = image[1]
+    # label = ReadNIFTI(r"DATA\001_Label_Body.nii.gz", True)
+    # label.convertLabelMask()
     MainWindow.setImage(image)
+    # MainWindow.setLabel(label)
     MainWindow.show()
     sys.exit(app.exec())

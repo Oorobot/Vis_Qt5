@@ -132,7 +132,7 @@ class MedicalImage:
         # 归一化
         self.normlize()
         # 翻转
-        # self.array = np.ascontiguousarray(np.flip(self.array, 0))
+        self.array = np.ascontiguousarray(np.flip(self.array, 0))
 
     def normlize(self, amin: float = None, amax: float = None):
         if self.channel == 3:
