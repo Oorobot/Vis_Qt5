@@ -131,8 +131,6 @@ class MedicalImage:
 
         # 归一化
         self.normlize()
-        # 翻转
-        self.array = np.ascontiguousarray(np.flip(self.array, 0))
 
     def normlize(self, amin: float = None, amax: float = None):
         if self.channel == 3:
@@ -153,6 +151,14 @@ class MedicalImage:
             return self.normlized_array[:, self.position["c"] - 1, ...]
         elif view == "t" or view == "transverse":
             return self.normlized_array[self.position["t"] - 1, ...]
+
+    def planeOrigin(self, view: str):
+        if view == "s" or view == "sagittal":
+            return self.array[:, :, self.position["s"] - 1, ...]
+        elif view == "c" or view == "coronal":
+            return self.array[:, self.position["c"] - 1, ...]
+        elif view == "t" or view == "transverse":
+            return self.array[self.position["t"] - 1, ...]
 
     def positionAdd(self, view: str):
         self.position[view] = self.position[view] + 1 if self.position[view] < self.size[view] else self.size[view]

@@ -1,32 +1,83 @@
+import colorsys
 from typing import Union
 
+import cv2
 import numpy as np
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
 from entity import MedicalImage, ReadDICOM, ReadNIFTI
+from widget.subWidget.SubWindowConstrast import SubWindowConstrast
+
+np.random.seed(66)
+
+
+def _get_colors(num):
+    assert num > 0
+    colors = []
+    for i in np.arange(0.0, 360.0, 360.0 / num):
+        hue = i / 360
+        lightness = (50 + np.random.rand() * 10) / 100.0
+        saturation = (90 + np.random.rand() * 10) / 100.0
+        colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
+    return colors
 
 
 class ImageItem(QGraphicsPixmapItem):
-    def __init__(self, pixmap: QPixmap) -> None:
-        # 定义成员属性
-        self._left, self._top, self._w, self._h = -1.0, -1.0, 1.0, 1.0
-        self._view_w, self._view_h = 1.0, 1.0
-
+    def __init__(self, array: np.ndarray, channel: int) -> None:
+        # 创建 ImageItem
+        image = QImage(
+            array.data.tobytes(),
+            array.shape[1],
+            array.shape[0],
+            array.shape[1] * channel,
+            QImage.Format.Format_Grayscale8 if channel == 1 else QImage.Format.Format_RGB888,
+        )
+        pixmap = QPixmap.fromImage(image)
         # 初始化
         super(ImageItem, self).__init__(pixmap)
 
         # 属性
         self._w, self._h = self.pixmap().width(), self.pixmap().height()
-        self._left, self._top = -self._w / 2, -self._h / 2
+        self._left, self._top = round(-self._w / 2), round(-self._h / 2)
 
     def boundingRect(self) -> QRectF:
         return QRectF(self._left, self._top, self._w, self._h)
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: Union[QWidget, None]) -> None:
-        self.setOffset(self._left, self._top)
-        painter.drawPixmap(round(self._left), round(self._top), self.pixmap())
+        painter.drawPixmap(self._left, self._top, self.pixmap())
+
+
+class LabelItem(QGraphicsPixmapItem):
+    def __init__(self, array: np.ndarray, alpha: int = 127) -> None:
+        # 初始化
+        super(LabelItem, self).__init__()
+        # 属性
+        self._w, self._h = array.shape[1], array.shape[0]
+        self._left, self._top = round(-self._w / 2), round(-self._h / 2)
+        self.alpha = alpha
+
+        # 找到需要标注的位置及其颜色
+        uint8 = array.astype(np.uint8)
+        num_color = uint8.max()
+        colors = _get_colors(num_color)
+
+        self.paths = []
+        for i in range(1, num_color + 1):
+            uint8_i = (uint8 == i).astype(np.uint8)
+            contours, _ = cv2.findContours(uint8_i, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            path = QPainterPath()
+            for contour in contours:
+                path.addPolygon(QPolygonF([QPointF(c[0] + self._left, c[1] + self._top) for c in np.squeeze(contour)]))
+            self.paths.append([path, colors[i - 1]])
+
+    def boundingRect(self) -> QRectF:
+        return QRectF(self._left, self._top, self._w, self._h)
+
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget) -> None:
+        for path in self.paths:
+            painter.fillPath(path[0], QColor(*[int(p * 255) for p in path[1]], self.alpha))
 
 
 class GraphicsScene(QGraphicsScene):
@@ -90,6 +141,13 @@ class GraphicsView(QGraphicsView):
                 else:
                     self._image.positionAdd(self._view)
                 self.setImageItem(self._image.plane(self._view))
+
+                # 分割图
+                if self._label is not None:
+                    self._label.position[self._view] = self._image.position[self._view]
+                    self.setLabelItem(self._label.planeOrigin(self._view))
+
+                # 切换信息
                 self.parent().slideInfo.setText(
                     "{:0>4d}|{:0>4d}".format(self._image.position[self._view], self._image.size[self._view])
                 )
@@ -124,6 +182,8 @@ class GraphicsView(QGraphicsView):
         self._view = view
         self.reset()
         self.setImageItem(self._image.plane(self._view))
+        if self._label is not None:
+            self.setLabelItem(self._label.planeOrigin(self._view))
 
     # 切换图像
     def setImage(self, image: MedicalImage):
@@ -132,23 +192,13 @@ class GraphicsView(QGraphicsView):
         self.setImageItem(self._image.plane(self._view))
 
     # 设置ImageItem
-    def setImageItem(self, image2D: np.ndarray):
-        # 清除图像
+    def setImageItem(self, imageArray: np.ndarray):
         if self._imageItem is not None:
-            self.scene().removeItem(self._imageItem)
+            self.scene().removeItem(self._imageItem)  # 清除图像
+        else:
+            self.reset()  # 缩放
 
-        # 创建 ImageItem
-        imageQ = QImage(
-            image2D.data.tobytes(),
-            image2D.shape[1],
-            image2D.shape[0],
-            image2D.shape[1] * self._image.channel,
-            QImage.Format.Format_Grayscale8 if self._image.channel == 1 else QImage.Format.Format_RGB888,
-        )
-        pixmap = QPixmap.fromImage(imageQ)
-        self._imageItem = ImageItem(pixmap)
-        # 缩放至填满 view
-        self.reset()
+        self._imageItem = ImageItem(imageArray, self._image.channel)
         self.scene().addItem(self._imageItem)
         self.parent().slideInfo.setText(
             "{:0>4d}|{:0>4d}".format(self._image.position[self._view], self._image.size[self._view])
@@ -166,10 +216,25 @@ class GraphicsView(QGraphicsView):
             )
             messageBox.exec()
         else:
-            self.setLabelItem(self._label.plane(self._view))
+            self.setLabelItem(self._label.planeOrigin(self._view))
 
-    def setLabelItem(self, label2D: np.ndarray):
-        pass
+    def setLabelItem(self, labelArray: np.ndarray):
+        if self._labelItem is not None:
+            self.scene().removeItem(self._labelItem)  # 清除分割图
+        self._labelItem = LabelItem(labelArray)
+        self.scene().addItem(self._labelItem)
+
+    # 水平镜像
+    def horizontalFlip(self):
+        horizontalFlip = QTransform()
+        horizontalFlip.scale(-1, 1)
+        self.setTransform(self.transform() * horizontalFlip)
+
+    # 垂直镜像
+    def verticalFlip(self):
+        verticalFlip = QTransform()
+        verticalFlip.scale(1, -1)
+        self.setTransform(self.transform() * verticalFlip)
 
 
 class ImageDisplayer(QWidget):
@@ -183,49 +248,46 @@ class ImageDisplayer(QWidget):
         toolbar.setFloatable(False)
 
         resetBtn = QToolButton()
-        resetBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        resetBtn.setIcon(QIcon("resource/reset.png"))
         resetBtn.setText("复原")
+        resetBtn.setIcon(QIcon("resource/reset.png"))
+        resetBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+
         toolbar.addWidget(resetBtn)
         toolbar.addSeparator()
 
         arrowBtn = QToolButton()
-        arrowBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        arrowIcon = QIcon("resource/arrow.png")
-        arrowBtn.setIcon(arrowIcon)
         arrowBtn.setText("普通")
+        arrowBtn.setIcon(QIcon("resource/arrow.png"))
+        arrowBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         dragBtn = QToolButton()
-        dragIcon = QIcon("resource/drag.png")
-        dragBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         dragBtn.setText("拖动")
-        dragBtn.setIcon(dragIcon)
+        dragBtn.setIcon(QIcon("resource/drag.png"))
+        dragBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
         toolbar.addWidget(arrowBtn)
         toolbar.addWidget(dragBtn)
         toolbar.addSeparator()
 
         resizeBtn = QToolButton()
-        resizeIcon = QIcon("resource/resize.png")
-        resizeBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        resizeBtn.setIcon(resizeIcon)
         resizeBtn.setText("缩放")
+        resizeBtn.setIcon(QIcon("resource/resize.png"))
+        resizeBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         slideBtn = QToolButton()
-        slideIcon = QIcon("resource/slide.png")
-        slideBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         slideBtn.setText("切换")
-        slideBtn.setIcon(slideIcon)
+        slideBtn.setIcon(QIcon("resource/slide.png"))
+        slideBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
         toolbar.addWidget(resizeBtn)
         toolbar.addWidget(slideBtn)
         toolbar.addSeparator()
 
         viewBtn = QToolButton()
+        viewBtn.setText("视图")
         viewBtn.setAutoRaise(True)
         viewBtn.setIcon(QIcon("resource/view.png"))
         viewBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        viewSubMenu = QMenu()
-        viewBtn.setText("视图")
         viewBtn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        viewSubMenu = QMenu()
         viewS = viewSubMenu.addAction(QIcon("resource/S.png"), "矢状面")
         viewC = viewSubMenu.addAction(QIcon("resource/C.png"), "冠状面")
         viewT = viewSubMenu.addAction(QIcon("resource/T.png"), "横截面")
@@ -238,9 +300,32 @@ class ImageDisplayer(QWidget):
         constrastBtn.setIcon(QIcon("resource/constrast.png"))
         constrastBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.subWindowConstrast = SubWindowConstrast()
+
         toolbar.addWidget(constrastBtn)
         toolbar.addSeparator()
 
+        flipHBtn = QToolButton()
+        flipHBtn.setText("水平")
+        flipHBtn.setIcon(QIcon("resource/flipH.png"))
+        flipHBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        flipVBtn = QToolButton()
+        flipVBtn.setText("垂直")
+        flipVBtn.setIcon(QIcon("resource/flipV.png"))
+        flipVBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+
+        toolbar.addWidget(flipHBtn)
+        toolbar.addWidget(flipVBtn)
+        toolbar.addSeparator()
+
+        maskBtn = QToolButton()
+        maskBtn.setText("分割图")
+        maskBtn.setIcon(QIcon("resource/mask.png"))
+        maskBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+
+        toolbar.addWidget(maskBtn)
+        toolbar.addSeparator()
+
+        # 视图信息和切换信息
         toolInfoLayout = QHBoxLayout()
         toolInfoLayout.addWidget(toolbar)
         toolInfoLayout.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
@@ -276,6 +361,9 @@ class ImageDisplayer(QWidget):
         resizeBtn.clicked.connect(self.activateResizeMode)
         slideBtn.clicked.connect(self.activateSlideMode)
         constrastBtn.clicked.connect(self.activateConstrastWindow)
+        flipHBtn.clicked.connect(self.flipHorizontal)
+        flipVBtn.clicked.connect(self.flipVertical)
+        maskBtn.clicked.connect(self.openMask)
 
         viewS.triggered.connect(self.setViewS)
         viewC.triggered.connect(self.setViewC)
@@ -311,6 +399,22 @@ class ImageDisplayer(QWidget):
         if self.view._image is not None:
             self.view._image.normlize(mi, ma)
             self.view.setImageItem(self.view._image.plane(self.view._view))
+        if self.view._label is not None:
+            self.view.setLabelItem(self.view._label.planeOrigin(self.view._view))
+
+    def flipHorizontal(self):
+        self.view.horizontalFlip()
+
+    def flipVertical(self):
+        self.view.verticalFlip()
+
+    def openMask(self):
+        filename = QFileDialog().getOpenFileName(self, "选择文件", "./", filter="NIFTI(*.nii *.nii.gz);;")
+        if len(filename[0]) == 0:
+            return
+
+        maskImage = ReadNIFTI(filename[0], True)
+        self.setLabel(maskImage)
 
     def setViewS(self):
         self.view.setView("s")
@@ -334,118 +438,6 @@ class ImageDisplayer(QWidget):
 
     def setLabel(self, label: MedicalImage):
         self.view.setLabel(label)
-
-
-class SubWindowConstrast(QWidget):
-    constrastValue = pyqtSignal(float, float)
-
-    def __init__(self, mi=0.0, ma=0.0, parent: QWidget = None) -> None:
-        super().__init__(parent)
-        self.resize(300, 100)
-
-        self.setWindowTitle("对比度")
-        validator = QDoubleValidator(self)
-
-        labelMin = QLabel()
-        labelMin.setText("最小值")
-        labelMin.setFixedWidth(40)
-        labelMin.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.editMin = QLineEdit()
-        self.editMin.setText(str(mi))
-        self.editMin.setFixedWidth(80)
-        self.editMin.setValidator(validator)
-
-        labelMax = QLabel()
-        labelMax.setText("最大值")
-        labelMax.setFixedWidth(40)
-        labelMax.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.editMax = QLineEdit()
-        self.editMax.setText(str(ma))
-        self.editMax.setFixedWidth(80)
-        self.editMax.setValidator(validator)
-
-        layout1 = QHBoxLayout()
-        layout1.setSpacing(0)
-        layout1.setContentsMargins(0, 0, 10, 0)
-        layout1.addWidget(labelMin)
-        layout1.addWidget(self.editMin)
-        layout1.addWidget(labelMax)
-        layout1.addWidget(self.editMax)
-
-        labelWindowLevel = QLabel()
-        labelWindowLevel.setText("窗位")
-        labelWindowLevel.setFixedWidth(40)
-        labelWindowLevel.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.editWindowLevel = QLineEdit()
-        self.editWindowLevel.setText(str((mi + ma) / 2))
-        self.editWindowLevel.setFixedWidth(80)
-        self.editWindowLevel.setValidator(validator)
-
-        labelWindowWidth = QLabel()
-        labelWindowWidth.setText("窗宽")
-        labelWindowWidth.setFixedWidth(40)
-        labelWindowWidth.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.editWindowWidth = QLineEdit()
-        self.editWindowWidth.setText(str(ma - mi))
-        self.editWindowWidth.setFixedWidth(80)
-        self.editWindowWidth.setValidator(validator)
-
-        layout2 = QHBoxLayout()
-        layout2.setSpacing(0)
-        layout2.setContentsMargins(0, 0, 10, 0)
-        layout2.addWidget(labelWindowLevel)
-        layout2.addWidget(self.editWindowLevel)
-        layout2.addWidget(labelWindowWidth)
-        layout2.addWidget(self.editWindowWidth)
-
-        btn = QPushButton()
-        btn.setText("确定")
-        btn.setFixedWidth(80)
-
-        layout = QVBoxLayout()
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(layout1)
-        layout.addLayout(layout2)
-        layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-        self.setLayout(layout)
-
-        #
-        self.editMax.editingFinished.connect(lambda: self.valueChanged("min_max"))
-        self.editMin.editingFinished.connect(lambda: self.valueChanged("min_max"))
-
-        #
-        self.editWindowLevel.editingFinished.connect(lambda: self.valueChanged("level_width"))
-        self.editWindowWidth.editingFinished.connect(lambda: self.valueChanged("level_width"))
-
-        #
-        btn.clicked.connect(self.clicked)
-
-    def valueChanged(self, param: str):
-        if param == "min_max":
-            mi = 0.0 if len(self.editMin.text()) == 0 else float(self.editMin.text())
-            ma = 0.0 if len(self.editMin.text()) == 0 else float(self.editMax.text())
-            if mi > ma:
-                ma = mi
-            self.editMin.setText(f"{mi:.2f}")
-            self.editMax.setText(f"{ma:.2f}")
-            self.editWindowLevel.setText(f"{(ma + mi) / 2:.2f}")
-            self.editWindowWidth.setText(f"{ma - mi:.2f}")
-        elif param == "level_width":
-            level = 0.0 if len(self.editWindowLevel.text()) == 0 else float(self.editWindowLevel.text())
-            width = 0.0 if len(self.editWindowWidth.text()) == 0 else float(self.editWindowWidth.text())
-            self.editMin.setText(f"{level - width / 2:.2f}")
-            self.editMax.setText(f"{level + width / 2:.2f}")
-            self.editWindowLevel.setText(f"{level:.2f}")
-            self.editWindowWidth.setText(f"{width:.2f}")
-        else:
-            raise Exception(f"not supprot param = {param}")
-
-    def clicked(self):
-        mi, ma = float(self.editMin.text()), float(self.editMax.text())
-        self.constrastValue.emit(mi, ma)
-        self.close()
 
 
 if __name__ == "__main__":
