@@ -4,7 +4,8 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
-from entity import MedicalImage, ReadImage
+from utility.io import ReadImage
+from utility.MedicalImage import MedicalImage
 
 
 class CollapsibleChild(QWidget):
