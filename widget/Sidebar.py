@@ -20,14 +20,13 @@ from widget.CollapsibleWidget import CollapsibleWidget
 
 class Sidebar(QWidget):
     def __init__(self, parent: QWidget = None) -> None:
-        # 定义成员属性
-        self.collapsible_widgets: Dict[str, CollapsibleWidget] = {}
-        self.checked_children: List[str] = []
-
         # 初始化
         super().__init__(parent)
+        self.checkedChildren: List[str] = []
+        self.collapsibleWidgets: Dict[str, CollapsibleWidget] = {}
+
         self.setMinimumWidth(380)
-        self.setMinimumHeight(480)
+        self.setMinimumHeight(560)
 
         layout = QHBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -136,35 +135,35 @@ class Sidebar(QWidget):
     def addCollapsibleWidget(self, study_image: dict):
         for study_uid, series_image in study_image.items():
             description = series_image.pop("description")
-            if study_uid in self.collapsible_widgets:
-                self.collapsible_widgets[study_uid].addChildren(series_image)
+            if study_uid in self.collapsibleWidgets:
+                self.collapsibleWidgets[study_uid].addChildren(series_image)
             else:
                 widget = CollapsibleWidget(study_uid, description, series_image)
                 # 绑定信号与槽
-                widget.delete_triggered.connect(self.removeCollapsibleWidget)
-                widget.child_toggled.connect(self.childToggled)
-                self.collapsible_widgets[study_uid] = widget
+                widget.deleted.connect(self.removeCollapsibleWidget)
+                widget.childChecked.connect(self.childToggled)
+                self.collapsibleWidgets[study_uid] = widget
                 self.layoutCollapsibleButtons.addWidget(widget)
 
     def removeCollapsibleWidget(self, collapsibleWidgetUid):
-        _collapsibleWidget = self.collapsible_widgets.pop(collapsibleWidgetUid)
+        _collapsibleWidget = self.collapsibleWidgets.pop(collapsibleWidgetUid)
         _collapsibleWidget.close()
         _collapsibleWidget.destroy()
 
     def childToggled(self, widget_uid: str, child_uid: str, c: bool):
         if c:
-            self.checked_children.append(widget_uid + "_^_" + child_uid)
-            if self.checked_children[0].startswith(widget_uid):
-                while len(self.checked_children) >= 3:
-                    checked = self.checked_children[0]
+            self.checkedChildren.append(widget_uid + "_^_" + child_uid)
+            if self.checkedChildren[0].startswith(widget_uid):
+                while len(self.checkedChildren) >= 3:
+                    checked = self.checkedChildren[0]
                     widget_uid, child_uid = checked.split("_^_")
-                    self.collapsible_widgets[widget_uid].children[child_uid].radioBtn.setChecked(False)
+                    self.collapsibleWidgets[widget_uid].children[child_uid].radioBtn.setChecked(False)
             else:
-                for checked in self.checked_children[:-1]:
+                for checked in self.checkedChildren[:-1]:
                     widget_uid, child_uid = checked.split("_^_")
-                    self.collapsible_widgets[widget_uid].children[child_uid].radioBtn.setChecked(False)
+                    self.collapsibleWidgets[widget_uid].children[child_uid].radioBtn.setChecked(False)
         else:
-            self.checked_children.remove(widget_uid + "_^_" + child_uid)
+            self.checkedChildren.remove(widget_uid + "_^_" + child_uid)
 
     def hideBtnClicked(self):
         if self.widgetMain.isVisible():

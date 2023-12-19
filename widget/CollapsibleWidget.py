@@ -1,15 +1,24 @@
 from typing import Dict
 
-from PyQt6.QtCore import *
-from PyQt6.QtGui import *
-from PyQt6.QtWidgets import *
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtWidgets import (
+    QHBoxLayout,
+    QMenu,
+    QRadioButton,
+    QSizePolicy,
+    QSpacerItem,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from utility.MedicalImage import MedicalImage
 
 
 class CollapsibleChild(QWidget):
-    delete_triggered = pyqtSignal(str)
-    toggled = pyqtSignal(str, bool)
+    deleted = pyqtSignal(str)
+    checked = pyqtSignal(str, bool)
 
     def __init__(self, uid: str, description: str, image: MedicalImage, parent: QWidget = None) -> None:
         # 初始化
@@ -54,21 +63,21 @@ class CollapsibleChild(QWidget):
         self.contextMenu.move(self.mapToGlobal(pos))
 
     def deleteActionTriggered(self):
-        self.delete_triggered.emit(self.uid)
+        self.deleted.emit(self.uid)
 
     def radioBtnToggled(self, c: bool):
-        self.toggled.emit(self.uid, c)
+        self.checked.emit(self.uid, c)
 
 
 class CollapsibleWidget(QWidget):
-    delete_triggered = pyqtSignal(str)
-    child_toggled = pyqtSignal(str, str, bool)
+    deleted = pyqtSignal(str)
+    childChecked = pyqtSignal(str, str, bool)
 
     def __init__(self, uid: str, description: str, series_image: dict, parent: QWidget = None):
         # 初始化
         super().__init__(parent)
         self.uid: str = uid
-        self.collapsible: bool = False
+        self.collapsible: bool = True
         self.children: Dict[str, CollapsibleChild] = {}
 
         # 主布局
@@ -79,7 +88,7 @@ class CollapsibleWidget(QWidget):
 
         # 可折叠按钮
         self.collapsibleButton = QToolButton(self)
-        self.collapsibleButton.setIcon(QIcon("resource/collapse.png"))
+        self.collapsibleButton.setIcon(QIcon("resource/expand.png"))
         self.collapsibleButton.setText(description)
         layout.addWidget(self.collapsibleButton)
 
@@ -111,8 +120,8 @@ class CollapsibleWidget(QWidget):
                     continue
                 child = CollapsibleChild(child_uid, description + " " + size_uid, image)
                 # 绑定信号与槽
-                child.delete_triggered.connect(self.removeChild)
-                child.toggled.connect(self.childToggled)
+                child.deleted.connect(self.removeChild)
+                child.checked.connect(self.childToggled)
                 # 添加
                 self.children[child_uid] = child
                 # 设置布局
@@ -127,12 +136,12 @@ class CollapsibleWidget(QWidget):
         _child.close()
         _child.destroy()
         if len(self.children) == 0:
-            self.delete_triggered.emit(self.uid)
+            self.deleted.emit(self.uid)
         else:
             self.setFixedHeight(40 + (len(self.children) * 30))
 
     def childToggled(self, child_uid: str, c: bool):
-        self.child_toggled.emit(self.uid, child_uid, c)
+        self.childChecked.emit(self.uid, child_uid, c)
 
     def collapsibleBtnClicked(self) -> None:
         if self.collapsible:

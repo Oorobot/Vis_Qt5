@@ -3,11 +3,28 @@ from typing import Union
 
 import cv2
 import numpy as np
-from PyQt6.QtCore import *
-from PyQt6.QtGui import *
-from PyQt6.QtWidgets import *
+from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
+from PyQt6.QtGui import (
+    QBrush,
+    QColor,
+    QImage,
+    QPainter,
+    QPainterPath,
+    QPixmap,
+    QPolygonF,
+    QResizeEvent,
+    QTransform,
+    QWheelEvent,
+)
+from PyQt6.QtWidgets import (
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QMessageBox,
+    QStyleOptionGraphicsItem,
+    QWidget,
+)
 
-from utility.constant import VIEW_INT
 from utility.MedicalImage import MedicalImage
 
 np.random.seed(66)
@@ -82,7 +99,6 @@ class LabelItem(QGraphicsPixmapItem):
 class GraphicsScene(QGraphicsScene):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-
         # 设置背景为黑色
         self.setBackgroundBrush(QBrush(QColor("#000000")))
 
@@ -91,16 +107,19 @@ class GraphicsScene(QGraphicsScene):
 
 
 class GraphicsView(QGraphicsView):
-    position_changed = pyqtSignal(str)
+    positionChanged = pyqtSignal(str)
 
     def __init__(self, view: str, parent: QWidget = None):
         # 定义成员属性
         self.view = view
         self.image, self.label = None, None
-        self.image_item, self.label_item = None, None
-        self.__position = self.__position_max = {"s": 1, "c": 1, "t": 1}
-        self._scale_factor = 1.05
-        self.__scale_default = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
+        self.imageItem, self.labelItem = None, None
+        self.__position = self.__positionMax = {"s": 1, "c": 1, "t": 1}
+
+        self.scaleFactor = 1.05
+        self.__scaleDefault = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
+
+        self.resizeOrSlide = False
 
         # 初始化
         super().__init__(parent)
@@ -122,7 +141,6 @@ class GraphicsView(QGraphicsView):
 
         # 设置拖动
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
-        self.resizeOrSlide = False
         # 设置缩放中心
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
@@ -137,19 +155,19 @@ class GraphicsView(QGraphicsView):
 
     @property
     def position_max(self):
-        return self.__position_max[self.view]
+        return self.__positionMax[self.view]
 
     @property
     def scale_default(self):
-        return self.__scale_default[self.view]
+        return self.__scaleDefault[self.view]
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         if self.resizeOrSlide:
             if event.angleDelta().y() > 0:
-                scale_factor = self._scale_factor
+                factor = self.scaleFactor
             else:
-                scale_factor = 1 / self._scale_factor
-            self.scale(scale_factor, scale_factor)
+                factor = 1 / self.scaleFactor
+            self.scale(factor, factor)
         else:
             if self.image is not None:
                 if event.angleDelta().y() > 0:
@@ -158,7 +176,7 @@ class GraphicsView(QGraphicsView):
                     self.position -= 1
                 self.setImageItem(self.image.plane_norm(self.view, self.position))
                 # 位置信息改变
-                self.position_changed.emit("{:0>4d}|{:0>4d}".format(self.position, self.position_max))
+                self.positionChanged.emit("{:0>4d}|{:0>4d}".format(self.position, self.position_max))
                 # 分割图
                 if self.label is not None:
                     self.setLabelItem(self.label.plane_origin(self.view, self.position))
@@ -170,7 +188,7 @@ class GraphicsView(QGraphicsView):
             min(self.height() * 1.0 / size_t, self.width() * 1.0 / size_s),
             min(self.height() * 1.0 / size_c, self.width() * 1.0 / size_s),
         )
-        self.__scale_default = {
+        self.__scaleDefault = {
             "s": (self.image.spacing[1] * _scale_s, self.image.spacing[2] * _scale_s),
             "c": (self.image.spacing[0] * _scale_c, self.image.spacing[2] * _scale_c),
             "t": (self.image.spacing[0] * _scale_t, self.image.spacing[1] * _scale_t),
@@ -201,7 +219,7 @@ class GraphicsView(QGraphicsView):
             "c": self.image.size[1] // 2 + 1,
             "t": self.image.size[2] // 2 + 1,
         }
-        self.__position_max = {
+        self.__positionMax = {
             "s": self.image.size[0],
             "c": self.image.size[1],
             "t": self.image.size[2],
@@ -210,16 +228,16 @@ class GraphicsView(QGraphicsView):
         self.setImageItem(self.image.plane_norm(self.view, self.position))
 
     # 设置ImageItem
-    def setImageItem(self, image_array: np.ndarray):
-        if self.image_item is not None:
-            self.scene().removeItem(self.image_item)  # 清除图像
+    def setImageItem(self, imageArray: np.ndarray):
+        if self.imageItem is not None:
+            self.scene().removeItem(self.imageItem)  # 清除图像
         else:
             self.reset()  # 缩放
 
-        self.image_item = ImageItem(image_array, self.image.channel)
-        self.scene().addItem(self.image_item)
+        self.imageItem = ImageItem(imageArray, self.image.channel)
+        self.scene().addItem(self.imageItem)
         # 修改位置信息
-        self.position_changed.emit("{:0>4d}|{:0>4d}".format(self.position, self.position_max))
+        self.positionChanged.emit("{:0>4d}|{:0>4d}".format(self.position, self.position_max))
 
     def setLabel(self, label: MedicalImage):
         if self.image is None:
@@ -232,11 +250,11 @@ class GraphicsView(QGraphicsView):
             self.label = label
             self.setLabelItem(self.label.plane_origin(self.view, self.position))
 
-    def setLabelItem(self, label_array: np.ndarray):
-        if self.label_item is not None:
-            self.scene().removeItem(self.label_item)  # 清除分割图
-        self.label_item = LabelItem(label_array)
-        self.scene().addItem(self.label_item)
+    def setLabelItem(self, labelArray: np.ndarray):
+        if self.labelItem is not None:
+            self.scene().removeItem(self.labelItem)  # 清除分割图
+        self.labelItem = LabelItem(labelArray)
+        self.scene().addItem(self.labelItem)
 
     # 水平镜像
     def horizontalFlip(self):

@@ -3,8 +3,8 @@ from PyQt6.QtWidgets import QWidget
 from vtkmodules.qt import QVTKRenderWindowInteractor
 
 
-class QVTKWidget(QWidget):
+class VTKWidget(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
-        self._vtk = QVTKRenderWindowInteractor()
+        self.vtk = QVTKRenderWindowInteractor()

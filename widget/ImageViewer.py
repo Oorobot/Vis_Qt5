@@ -151,7 +151,7 @@ class ImageViewer(QWidget):
         viewC.triggered.connect(self.setViewC)
         viewT.triggered.connect(self.setViewT)
 
-        self.view.position_changed.connect(self.setPosition)
+        self.view.positionChanged.connect(self.setSlideInfo)
 
     # 复原
     def activateReset(self):
@@ -212,7 +212,7 @@ class ImageViewer(QWidget):
         self.view.setView("t")
         self.viewInfo.setText(VIEW_NAME["t"])
 
-    def setPosition(self, text: str):
+    def setSlideInfo(self, text: str):
         self.slideInfo.setText(text)
 
     def setImage(self, image: MedicalImage):
