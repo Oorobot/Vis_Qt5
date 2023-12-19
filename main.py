@@ -1,10 +1,8 @@
-import typing
-
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QMainWindow, QTabWidget, QWidget
+from PyQt6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QTabWidget, QWidget
 
-from widget.CollapsibleWidget import Sidebar
 from widget.ImageViewer import ImageViewer
+from widget.Sidebar import Sidebar
 
 
 class Main(QMainWindow):

@@ -3,8 +3,8 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 
-class SubWindowConstrast(QWidget):
-    constrastValue = pyqtSignal(float, float)
+class ConstrastWindow(QWidget):
+    constrastChanged = pyqtSignal(float, float)
 
     def __init__(self, mi=0.0, ma=0.0, parent: QWidget = None) -> None:
         super().__init__(parent)
@@ -111,5 +111,5 @@ class SubWindowConstrast(QWidget):
 
     def clicked(self):
         mi, ma = float(self.editMin.text()), float(self.editMax.text())
-        self.constrastValue.emit(mi, ma)
+        self.constrastChanged.emit(mi, ma)
         self.close()

@@ -18,7 +18,7 @@ from utility.constant import VIEW_NAME
 from utility.io import ReadNIFTI
 from utility.MedicalImage import MedicalImage
 from widget.GraphicsView import GraphicsView
-from widget.subwidget.SubWindowConstrast import SubWindowConstrast
+from widget.subwidget.ConstrastWindow import ConstrastWindow
 
 
 class ImageViewer(QWidget):
@@ -81,7 +81,7 @@ class ImageViewer(QWidget):
         constrastBtn.setText("对比度")
         constrastBtn.setIcon(QIcon("resource/constrast.png"))
         constrastBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.subWindowConstrast = SubWindowConstrast()
+        self.constrastWindow = ConstrastWindow()
 
         toolbar.addWidget(constrastBtn)
         toolbar.addSeparator()
@@ -175,8 +175,8 @@ class ImageViewer(QWidget):
 
     # 对比度
     def activateConstrastWindow(self):
-        self.subWindowConstrast.show()
-        self.subWindowConstrast.constrastValue.connect(self.adjustConstrast)
+        self.constrastWindow.show()
+        self.constrastWindow.constrastChanged.connect(self.adjustConstrast)
 
     # 调整对比度
     def adjustConstrast(self, mi, ma):
@@ -217,10 +217,10 @@ class ImageViewer(QWidget):
 
     def setImage(self, image: MedicalImage):
         mi, ma = image.array.min(), image.array.max()
-        self.subWindowConstrast.editMin.setText(f"{mi:.2f}")
-        self.subWindowConstrast.editMax.setText(f"{ma:.2f}")
-        self.subWindowConstrast.editWindowLevel.setText(f"{(mi + ma) / 2:.2f}")
-        self.subWindowConstrast.editWindowWidth.setText(f"{ma- mi:.2f}")
+        self.constrastWindow.editMin.setText(f"{mi:.2f}")
+        self.constrastWindow.editMax.setText(f"{ma:.2f}")
+        self.constrastWindow.editWindowLevel.setText(f"{(mi + ma) / 2:.2f}")
+        self.constrastWindow.editWindowWidth.setText(f"{ma- mi:.2f}")
         self.view.setImage(image)
 
     def setLabel(self, label: MedicalImage):
@@ -235,12 +235,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     MainWindow = ImageViewer()
     image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
-    # image = ReadDICOM(r"DATA\001\CT\ImageFileName000.dcm").popitem()
-    # image = image[1].popitem()
-    # image = image[1]
-    # label = ReadNIFTI(r"DATA\001_Label_Body.nii.gz", True)
-    # label.convertLabelMask()
     MainWindow.setImage(image)
-    # MainWindow.setLabel(label)
     MainWindow.show()
     sys.exit(app.exec())

@@ -41,7 +41,7 @@ def ReadDICOM(file: str) -> dict:
         size_uid = str(slice.size)
         if slice.study_uid not in slices:
             slices[slice.study_uid] = {
-                "description": slice.patient_name + "\t" + slice.study_datetime,
+                "description": slice.patient_name + " " + slice.study_datetime,
                 slice.series_uid: {
                     "description": slice.series_description,
                     size_uid: [slice],

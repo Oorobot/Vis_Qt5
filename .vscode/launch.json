@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "CollapsibleWidget",
+            "name": "io",
             "type": "python",
             "request": "launch",
-            "module": "widget.CollapsibleWidget",
+            "module": "utility.io",
             "justMyCode": true
         },
         {
@@ -19,11 +19,11 @@
             "justMyCode": true
         },
         {
-            "name": "io",
+            "name": "Sidebar",
             "type": "python",
             "request": "launch",
-            "module": "utility.io",
+            "module": "widget.Sidebar",
             "justMyCode": true
-        }
+        },
     ]
 }
