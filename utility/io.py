@@ -12,7 +12,14 @@ from utility.MedicalSlice import MedicalSlice
 def ReadNIFTI(file: str, only_image=False) -> dict:
     filename = os.path.basename(file)
     image = sitk.ReadImage(file)
-    medical_image = MedicalImage(image, "OT")
+    medical_image = MedicalImage(
+        sitk.GetArrayFromImage(image),
+        image.GetSize(),
+        image.GetSpacing(),
+        image.GetOrigin(),
+        image.GetDirection(),
+        "OT",
+    )
     if only_image:
         return medical_image
     else:
@@ -73,7 +80,7 @@ def ReadDICOM(file: str) -> dict:
                 if size_uid == "description":
                     continue
                 size_slices = series_slices[size_uid]
-                # 2D Slices -> 3D Volume
+                # Slices -> Volume
                 slices_left, skip_count = [], 0
                 for slice in size_slices:
                     if slice.slice_location is not None:
@@ -87,13 +94,21 @@ def ReadDICOM(file: str) -> dict:
                 else:
                     print("[INFO] compose slices by instance number.")
                     size_slices.sort(key=lambda x: x.instance_number)
-                volume = np.concatenate([s.array[np.newaxis, ...] for s in size_slices], axis=0)
-                # 3D volume -> Medical Image
-                image = sitk.GetImageFromArray(volume)
-                image.SetOrigin(size_slices[0].origin)
-                image.SetSpacing(size_slices[0].spacing)
-                image.SetDirection(size_slices[0].direction)
-                medical_image = MedicalImage(image, size_slices[0].modality, size_slices[0].channel)
+                volume = np.concatenate(
+                    [s.array[np.newaxis, ...] if s.size[-1] == 0 else s.array for s in size_slices], axis=0
+                )
+                # volume -> Medical Image
+                w, h, _d = size_slices[0].size
+                d = len(size_slices) if _d == 0 else _d
+                medical_image = MedicalImage(
+                    volume,
+                    (w, h, d),
+                    size_slices[0].spacing,
+                    size_slices[0].origin,
+                    size_slices[0].direction,
+                    size_slices[0].modality,
+                    size_slices[0].channel,
+                )
                 # replace size_uid and mediacl_image
                 series_slices.pop(size_uid)
                 series_slices[str(medical_image.size)] = medical_image

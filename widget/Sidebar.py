@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -15,10 +15,13 @@ from PyQt6.QtWidgets import (
 )
 
 from utility.io import ReadImage
+from utility.MedicalImage import MedicalImage
 from widget.CollapsibleWidget import CollapsibleWidget
 
 
 class Sidebar(QWidget):
+    displayImage2D = pyqtSignal(str, str, MedicalImage)
+
     def __init__(self, parent: QWidget = None) -> None:
         # 初始化
         super().__init__(parent)
@@ -36,63 +39,63 @@ class Sidebar(QWidget):
         self.widgetMain.setLayout(layoutMain)
         layout.addWidget(self.widgetMain)
         # 主按钮
-        openBtn = QToolButton(self)
-        openBtn.setIcon(QIcon("resource/open.png"))
-        openBtn.setIconSize(QSize(30, 30))
-        openBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        openBtn.setToolTip("打开文件")
-        openBtn.setToolTipDuration(5000)
-        openBtn.setObjectName("openBtn")
-        openBtn.setStyleSheet(
-            "#openBtn{background-color:transparent;}"
-            "#openBtn:hover{background-color:rgba(71,141,141,0.4);}"
-            "#openBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        openButton = QToolButton(self)
+        openButton.setIcon(QIcon("resource/open.png"))
+        openButton.setIconSize(QSize(30, 30))
+        openButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        openButton.setToolTip("打开文件")
+        openButton.setToolTipDuration(5000)
+        openButton.setObjectName("openButton")
+        openButton.setStyleSheet(
+            "#openButton{background-color:transparent;}"
+            "#openButton:hover{background-color:rgba(71,141,141,0.4);}"
+            "#openButton:pressed{background-color:rgba(174,238,238,0.4);}"
         )
-        display2DBtn = QToolButton(self)
-        display2DBtn.setIcon(QIcon("resource/display2d.png"))
-        display2DBtn.setIconSize(QSize(30, 30))
-        display2DBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        display2DBtn.setToolTip("2D浏览")
-        display2DBtn.setToolTipDuration(5000)
-        display2DBtn.setObjectName("display2DBtn")
-        display2DBtn.setStyleSheet(
-            "#display2DBtn{background-color:transparent;}"
-            "#display2DBtn:hover{background-color:rgba(71,141,141,0.4);}"
-            "#display2DBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        display2DButton = QToolButton(self)
+        display2DButton.setIcon(QIcon("resource/display2d.png"))
+        display2DButton.setIconSize(QSize(30, 30))
+        display2DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        display2DButton.setToolTip("2D浏览")
+        display2DButton.setToolTipDuration(5000)
+        display2DButton.setObjectName("display2DButton")
+        display2DButton.setStyleSheet(
+            "#display2DButton{background-color:transparent;}"
+            "#display2DButton:hover{background-color:rgba(71,141,141,0.4);}"
+            "#display2DButton:pressed{background-color:rgba(174,238,238,0.4);}"
         )
-        display3DBtn = QToolButton(self)
-        display3DBtn.setIcon(QIcon("resource/display3d.png"))
-        display3DBtn.setIconSize(QSize(30, 30))
-        display3DBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        display3DBtn.setToolTip("3D浏览")
-        display3DBtn.setToolTipDuration(5000)
-        display3DBtn.setObjectName("display3DBtn")
-        display3DBtn.setStyleSheet(
-            "#display3DBtn{background-color:transparent;}"
-            "#display3DBtn:hover{background-color:rgba(71,141,141,0.4);}"
-            "#display3DBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        display3DButton = QToolButton(self)
+        display3DButton.setIcon(QIcon("resource/display3d.png"))
+        display3DButton.setIconSize(QSize(30, 30))
+        display3DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        display3DButton.setToolTip("3D浏览")
+        display3DButton.setToolTipDuration(5000)
+        display3DButton.setObjectName("display3DButton")
+        display3DButton.setStyleSheet(
+            "#display3DButton{background-color:transparent;}"
+            "#display3DButton:hover{background-color:rgba(71,141,141,0.4);}"
+            "#display3DButton:pressed{background-color:rgba(174,238,238,0.4);}"
         )
-        displayFusionBtn = QToolButton(self)
-        displayFusionBtn.setIcon(QIcon("resource/displayFusion.png"))
-        displayFusionBtn.setIconSize(QSize(30, 30))
-        displayFusionBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        displayFusionBtn.setToolTip("融合浏览")
-        displayFusionBtn.setToolTipDuration(5000)
-        displayFusionBtn.setObjectName("displayFusionBtn")
-        displayFusionBtn.setStyleSheet(
-            "#displayFusionBtn{background-color:transparent;}"
-            "#displayFusionBtn:hover{background-color:rgba(71,141,141,0.4);}"
-            "#displayFusionBtn:pressed{background-color:rgba(174,238,238,0.4);}"
+        displayFusionButton = QToolButton(self)
+        displayFusionButton.setIcon(QIcon("resource/displayFusion.png"))
+        displayFusionButton.setIconSize(QSize(30, 30))
+        displayFusionButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        displayFusionButton.setToolTip("融合浏览")
+        displayFusionButton.setToolTipDuration(5000)
+        displayFusionButton.setObjectName("displayFusionButton")
+        displayFusionButton.setStyleSheet(
+            "#displayFusionButton{background-color:transparent;}"
+            "#displayFusionButton:hover{background-color:rgba(71,141,141,0.4);}"
+            "#displayFusionButton:pressed{background-color:rgba(174,238,238,0.4);}"
         )
 
-        layoutBtn = QHBoxLayout()
-        layoutBtn.setSpacing(20)
-        layoutBtn.setContentsMargins(0, 0, 0, 0)
-        layoutBtn.addWidget(openBtn)
-        layoutBtn.addWidget(display2DBtn)
-        layoutBtn.addWidget(display3DBtn)
-        layoutBtn.addWidget(displayFusionBtn)
-        layoutMain.addLayout(layoutBtn)
+        layoutButton = QHBoxLayout()
+        layoutButton.setSpacing(20)
+        layoutButton.setContentsMargins(0, 0, 0, 0)
+        layoutButton.addWidget(openButton)
+        layoutButton.addWidget(display2DButton)
+        layoutButton.addWidget(display3DButton)
+        layoutButton.addWidget(displayFusionButton)
+        layoutMain.addLayout(layoutButton)
 
         # scrollArea
         self.layoutCollapsibleButtons = QVBoxLayout()
@@ -111,26 +114,26 @@ class Sidebar(QWidget):
         layoutMain.addWidget(scrollArea)
 
         # 侧边隐藏按钮
-        self.hideBtn = QToolButton(self)
-        self.hideBtn.setArrowType(Qt.ArrowType.LeftArrow)
-        self.hideBtn.setFixedHeight(60)
-        self.hideBtn.setFixedWidth(15)
+        self.hideButton = QToolButton(self)
+        self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
+        self.hideButton.setFixedHeight(60)
+        self.hideButton.setFixedWidth(15)
         layoutHide = QVBoxLayout()
         layoutHide.setSpacing(0)
         layoutHide.setContentsMargins(0, 0, 0, 0)
         layoutHide.addItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
-        layoutHide.addWidget(self.hideBtn)
+        layoutHide.addWidget(self.hideButton)
         layoutHide.addItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         layout.addLayout(layoutHide)
 
         self.setLayout(layout)
 
         # 绑定
-        self.hideBtn.clicked.connect(self.hideBtnClicked)
-        openBtn.clicked.connect(self.openBtnClicked)
-        display2DBtn.clicked.connect(self.display2DBtnClicked)
-        display3DBtn.clicked.connect(self.display3DBtnClicked)
-        displayFusionBtn.clicked.connect(self.displayFusionBtnClicked)
+        self.hideButton.clicked.connect(self.hideButtonClicked)
+        openButton.clicked.connect(self.openButtonClicked)
+        display2DButton.clicked.connect(self.display2DButtonClicked)
+        display3DButton.clicked.connect(self.display3DButtonClicked)
+        displayFusionButton.clicked.connect(self.displayFusionButtonClicked)
 
     def addCollapsibleWidget(self, study_image: dict):
         for study_uid, series_image in study_image.items():
@@ -157,25 +160,25 @@ class Sidebar(QWidget):
                 while len(self.checkedChildren) >= 3:
                     checked = self.checkedChildren[0]
                     widget_uid, child_uid = checked.split("_^_")
-                    self.collapsibleWidgets[widget_uid].children[child_uid].radioBtn.setChecked(False)
+                    self.collapsibleWidgets[widget_uid].children[child_uid].radioButton.setChecked(False)
             else:
                 for checked in self.checkedChildren[:-1]:
                     widget_uid, child_uid = checked.split("_^_")
-                    self.collapsibleWidgets[widget_uid].children[child_uid].radioBtn.setChecked(False)
+                    self.collapsibleWidgets[widget_uid].children[child_uid].radioButton.setChecked(False)
         else:
             self.checkedChildren.remove(widget_uid + "_^_" + child_uid)
 
-    def hideBtnClicked(self):
+    def hideButtonClicked(self):
         if self.widgetMain.isVisible():
             self.widgetMain.setVisible(False)
-            self.hideBtn.setArrowType(Qt.ArrowType.RightArrow)
+            self.hideButton.setArrowType(Qt.ArrowType.RightArrow)
             self.setMinimumWidth(0)
         else:
             self.widgetMain.setVisible(True)
-            self.hideBtn.setArrowType(Qt.ArrowType.LeftArrow)
+            self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
             self.setMinimumWidth(320)
 
-    def openBtnClicked(self):
+    def openButtonClicked(self):
         filename = QFileDialog().getOpenFileName(
             self, "选择文件", "./", filter="IMAGE(*.dcm *.nii *.nii.gz);;NIFTI(*.nii *.nii.gz);;DICOM(*.dcm)"
         )
@@ -185,14 +188,19 @@ class Sidebar(QWidget):
         uidDictImage = ReadImage(filename[0])
         self.addCollapsibleWidget(uidDictImage)
 
-    def display2DBtnClicked(self):
-        print("display2DBtnClicked...")
+    def display2DButtonClicked(self):
+        for uid in self.checkedChildren:
+            widget_uid, child_uid = uid.split("_^_")
+            widget = self.collapsibleWidgets[widget_uid]
+            child = widget.children[child_uid]
+            title = widget.collapsibleButton.text().split(" ")[0] + " - " + child.radioButton.text().split(" ")[0]
+            self.displayImage2D.emit(uid + "2D", title, child.image)
 
-    def display3DBtnClicked(self):
-        print("display3DBtnClicked...")
+    def display3DButtonClicked(self):
+        print("display3DButtonClicked...")
 
-    def displayFusionBtnClicked(self):
-        print("displayFusionBtnClicked...")
+    def displayFusionButtonClicked(self):
+        print("displayFusionButtonClicked...")
         messageBox = QMessageBox(QMessageBox.Icon.Information, "提示", "该功能仅支持PET/CT融合成像。", QMessageBox.StandardButton.Ok)
         messageBox.exec()
 

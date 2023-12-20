@@ -26,10 +26,10 @@ class CollapsibleChild(QWidget):
         self.uid = uid
         self.image = image
 
-        self.radioBtn = QRadioButton(description, self)
+        self.radioButton = QRadioButton(description, self)
         layout = QHBoxLayout()
         layout.addItem(QSpacerItem(28, 30, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum))
-        layout.addWidget(self.radioBtn)
+        layout.addWidget(self.radioButton)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
@@ -37,8 +37,8 @@ class CollapsibleChild(QWidget):
         self.setMaximumWidth(300)
 
         # 样式
-        self.radioBtn.setObjectName("RadioButton")
-        self.radioBtn.setStyleSheet(
+        self.radioButton.setObjectName("RadioButton")
+        self.radioButton.setStyleSheet(
             "#RadioButton{background-color:transparent;}"
             "#RadioButton:hover{background-color:rgba(64,70,75,0.4);}"
             "#RadioButton:pressed{background-color:rgba(119,136,153,0.4);}"
@@ -56,7 +56,7 @@ class CollapsibleChild(QWidget):
         self.contextMenu.addAction(deleteAction)
 
         deleteAction.triggered.connect(self.deleteActionTriggered)
-        self.radioBtn.toggled.connect(self.radioBtnToggled)
+        self.radioButton.toggled.connect(self.radioButtonToggled)
 
     def showCustomContextMenu(self, pos):
         self.contextMenu.show()
@@ -65,7 +65,7 @@ class CollapsibleChild(QWidget):
     def deleteActionTriggered(self):
         self.deleted.emit(self.uid)
 
-    def radioBtnToggled(self, c: bool):
+    def radioButtonToggled(self, c: bool):
         self.checked.emit(self.uid, c)
 
 
@@ -106,7 +106,7 @@ class CollapsibleWidget(QWidget):
         )
 
         # 绑定事件
-        self.collapsibleButton.clicked.connect(self.collapsibleBtnClicked)
+        self.collapsibleButton.clicked.connect(self.collapsibleButtonClicked)
 
         # 添加 child
         self.addChildren(series_image)
@@ -143,12 +143,12 @@ class CollapsibleWidget(QWidget):
     def childToggled(self, child_uid: str, c: bool):
         self.childChecked.emit(self.uid, child_uid, c)
 
-    def collapsibleBtnClicked(self) -> None:
+    def collapsibleButtonClicked(self) -> None:
         if self.collapsible:
             self.collapsibleButton.setIcon(QIcon("resource/collapse.png"))
             self.setFixedHeight(40)
             for child in self.children.values():
-                child.radioBtn.setChecked(False)
+                child.radioButton.setChecked(False)
         else:
             self.collapsibleButton.setIcon(QIcon("resource/expand.png"))
             self.setFixedHeight(40 + (len(self.children) * 30))

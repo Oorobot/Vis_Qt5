@@ -25,5 +25,12 @@
             "module": "widget.Sidebar",
             "justMyCode": true
         },
+        {
+            "name": "main",
+            "type": "python",
+            "request": "launch",
+            "module": "main",
+            "justMyCode": true
+        },
     ]
 }

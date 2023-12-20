@@ -1,13 +1,26 @@
+from typing import List, Tuple
+
 import numpy as np
 import SimpleITK as sitk
 
 
 class MedicalImage:
-    def __init__(self, image: sitk.Image, modality: str, channel: int = None):
-        self.size = image.GetSize()
-        self.spacing = image.GetSpacing()
-        self.modality = modality  # PT, CT, NM, OT
-        self.array = sitk.GetArrayFromImage(image)
+    def __init__(
+        self,
+        array: np.ndarray,
+        size: Tuple[int, int, int],  # X, Y, Z
+        spacing: Tuple[int, int, int],  # X, Y, Z
+        origin: Tuple[int, int, int],  # Xx Xy Xz, Yx Yy Yz, Zx Zy Zz
+        direction: List[int],
+        modality: str,  # PT, CT, NM, OT
+        channel: int = None,
+    ):
+        self.array = array
+        self.size = size
+        self.spacing = spacing
+        self.origin = origin
+        self.direction = direction
+        self.modality = modality
 
         self.channel = (
             channel if channel is not None else 1 if len(self.array.shape) == len(self.size) else self.array.shape[-1]

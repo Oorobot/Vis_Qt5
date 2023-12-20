@@ -43,7 +43,7 @@ def _get_colors(num):
 
 class ImageItem(QGraphicsPixmapItem):
     def __init__(self, array: np.ndarray, channel: int) -> None:
-        # 创建 ImageItem
+        # 初始化
         image = QImage(
             array.data.tobytes(),
             array.shape[1],
@@ -52,7 +52,6 @@ class ImageItem(QGraphicsPixmapItem):
             QImage.Format.Format_Grayscale8 if channel == 1 else QImage.Format.Format_RGB888,
         )
         pixmap = QPixmap.fromImage(image)
-        # 初始化
         super(ImageItem, self).__init__(pixmap)
 
         # 属性
@@ -67,19 +66,22 @@ class ImageItem(QGraphicsPixmapItem):
 
 
 class LabelItem(QGraphicsPixmapItem):
-    def __init__(self, array: np.ndarray, alpha: int = 127) -> None:
+    def __init__(self, array: np.ndarray, opacity: float = 0.5) -> None:
         # 初始化
         super(LabelItem, self).__init__()
+
         # 属性
+        self.setOpacity(opacity)
         self.w, self.h = array.shape[1], array.shape[0]
         self.left, self.top = round(-self.w / 2), round(-self.h / 2)
-        self.alpha = alpha
 
         # 找到需要标注的位置及其颜色
         num_color = array.max()
-        colors = _get_colors(num_color)
-
         self.paths = []
+
+        if num_color == 0:
+            return
+        colors = _get_colors(num_color)
         for i in range(1, num_color + 1):
             uint8_i = (array == i).astype(np.uint8)
             contours, _ = cv2.findContours(uint8_i, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -93,7 +95,7 @@ class LabelItem(QGraphicsPixmapItem):
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget) -> None:
         for path in self.paths:
-            painter.fillPath(path[0], QColor(*[int(p * 255) for p in path[1]], self.alpha))
+            painter.fillPath(path[0], QColor(*[int(p * 255) for p in path[1]]))
 
 
 class GraphicsScene(QGraphicsScene):
@@ -107,7 +109,7 @@ class GraphicsScene(QGraphicsScene):
 
 
 class GraphicsView(QGraphicsView):
-    positionChanged = pyqtSignal(str)
+    positionChanged = pyqtSignal(int)
 
     def __init__(self, view: str, parent: QWidget = None):
         # 定义成员属性
@@ -120,6 +122,8 @@ class GraphicsView(QGraphicsView):
         self.__scaleDefault = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
 
         self.resizeOrSlide = False
+
+        self.labelOpacity = 0.50
 
         # 初始化
         super().__init__(parent)
@@ -169,17 +173,13 @@ class GraphicsView(QGraphicsView):
                 factor = 1 / self.scaleFactor
             self.scale(factor, factor)
         else:
-            if self.image is not None:
-                if event.angleDelta().y() > 0:
-                    self.position += 1
-                else:
-                    self.position -= 1
-                self.setImageItem(self.image.plane_norm(self.view, self.position))
-                # 位置信息改变
-                self.positionChanged.emit("{:0>4d}|{:0>4d}".format(self.position, self.position_max))
-                # 分割图
-                if self.label is not None:
-                    self.setLabelItem(self.label.plane_origin(self.view, self.position))
+            if event.angleDelta().y() > 0:
+                self.position += 1
+            else:
+                self.position -= 1
+            # 位置信息改变
+            self.positionChanged.emit(self.position)
+            self.setCurrentPlane()
 
     def reset(self) -> None:
         size_s, size_c, size_t = (s1 * s2 for s1, s2 in zip(self.image.size, self.image.spacing))
@@ -236,14 +236,12 @@ class GraphicsView(QGraphicsView):
 
         self.imageItem = ImageItem(imageArray, self.image.channel)
         self.scene().addItem(self.imageItem)
-        # 修改位置信息
-        self.positionChanged.emit("{:0>4d}|{:0>4d}".format(self.position, self.position_max))
 
     def setLabel(self, label: MedicalImage):
         if self.image is None:
             messageBox = QMessageBox(QMessageBox.Icon.Warning, "警告", "打开图像", QMessageBox.StandardButton.Close)
             messageBox.exec()
-        elif self.label.size != self.image.size:
+        elif label.size != self.image.size:
             messageBox = QMessageBox(QMessageBox.Icon.Warning, "警告", "分割图与图像的大小不同", QMessageBox.StandardButton.Close)
             messageBox.exec()
         else:
@@ -253,8 +251,20 @@ class GraphicsView(QGraphicsView):
     def setLabelItem(self, labelArray: np.ndarray):
         if self.labelItem is not None:
             self.scene().removeItem(self.labelItem)  # 清除分割图
-        self.labelItem = LabelItem(labelArray)
+        self.labelItem = LabelItem(labelArray, self.labelOpacity)
         self.scene().addItem(self.labelItem)
+
+    def setLabelItemOpacity(self, v: float):
+        self.labelOpacity = v
+        if self.labelItem is not None:
+            self.labelItem.setOpacity(self.labelOpacity)
+
+    # 设置当前平面
+    def setCurrentPlane(self):
+        if self.image is not None:
+            self.setImageItem(self.image.plane_norm(self.view, self.position))
+        if self.label is not None:
+            self.setLabelItem(self.label.plane_origin(self.view, self.position))
 
     # 水平镜像
     def horizontalFlip(self):

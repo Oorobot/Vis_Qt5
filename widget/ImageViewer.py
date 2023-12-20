@@ -1,12 +1,14 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QIcon, QIntValidator
 from PyQt6.QtWidgets import (
     QFileDialog,
     QGraphicsView,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMenu,
     QSizePolicy,
+    QSlider,
     QSpacerItem,
     QToolBar,
     QToolButton,
@@ -22,6 +24,8 @@ from widget.subwidget.ConstrastWindow import ConstrastWindow
 
 
 class ImageViewer(QWidget):
+    opacityChanged = pyqtSignal(float)
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
@@ -29,82 +33,89 @@ class ImageViewer(QWidget):
         toolbar.setMovable(False)
         toolbar.setFloatable(False)
 
-        resetBtn = QToolButton()
-        resetBtn.setText("复原")
-        resetBtn.setIcon(QIcon("resource/reset.png"))
-        resetBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        resetButton = QToolButton()
+        resetButton.setText("复原")
+        resetButton.setIcon(QIcon("resource/reset.png"))
+        resetButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
-        toolbar.addWidget(resetBtn)
+        toolbar.addWidget(resetButton)
         toolbar.addSeparator()
 
-        arrowBtn = QToolButton()
-        arrowBtn.setText("普通")
-        arrowBtn.setIcon(QIcon("resource/arrow.png"))
-        arrowBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        dragBtn = QToolButton()
-        dragBtn.setText("拖动")
-        dragBtn.setIcon(QIcon("resource/drag.png"))
-        dragBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        arrowButton = QToolButton()
+        arrowButton.setText("普通")
+        arrowButton.setIcon(QIcon("resource/arrow.png"))
+        arrowButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        dragButton = QToolButton()
+        dragButton.setText("拖动")
+        dragButton.setIcon(QIcon("resource/drag.png"))
+        dragButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
-        toolbar.addWidget(arrowBtn)
-        toolbar.addWidget(dragBtn)
+        toolbar.addWidget(arrowButton)
+        toolbar.addWidget(dragButton)
         toolbar.addSeparator()
 
-        resizeBtn = QToolButton()
-        resizeBtn.setText("缩放")
-        resizeBtn.setIcon(QIcon("resource/resize.png"))
-        resizeBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        slideBtn = QToolButton()
-        slideBtn.setText("切换")
-        slideBtn.setIcon(QIcon("resource/slide.png"))
-        slideBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        resizeButton = QToolButton()
+        resizeButton.setText("缩放")
+        resizeButton.setIcon(QIcon("resource/resize.png"))
+        resizeButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        slideButton = QToolButton()
+        slideButton.setText("切换")
+        slideButton.setIcon(QIcon("resource/slide.png"))
+        slideButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
-        toolbar.addWidget(resizeBtn)
-        toolbar.addWidget(slideBtn)
+        toolbar.addWidget(resizeButton)
+        toolbar.addWidget(slideButton)
         toolbar.addSeparator()
 
-        viewBtn = QToolButton()
-        viewBtn.setText("视图")
-        viewBtn.setAutoRaise(True)
-        viewBtn.setIcon(QIcon("resource/view.png"))
-        viewBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        viewBtn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        viewButton = QToolButton()
+        viewButton.setText("视图")
+        viewButton.setAutoRaise(True)
+        viewButton.setIcon(QIcon("resource/view.png"))
+        viewButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        viewButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         viewSubMenu = QMenu()
         viewS = viewSubMenu.addAction(QIcon("resource/S.png"), "矢状面")
         viewC = viewSubMenu.addAction(QIcon("resource/C.png"), "冠状面")
         viewT = viewSubMenu.addAction(QIcon("resource/T.png"), "横截面")
-        viewBtn.setMenu(viewSubMenu)
-        toolbar.addWidget(viewBtn)
+        viewButton.setMenu(viewSubMenu)
+        toolbar.addWidget(viewButton)
         toolbar.addSeparator()
 
-        constrastBtn = QToolButton()
-        constrastBtn.setText("对比度")
-        constrastBtn.setIcon(QIcon("resource/constrast.png"))
-        constrastBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        constrastButton = QToolButton()
+        constrastButton.setText("对比度")
+        constrastButton.setIcon(QIcon("resource/constrast.png"))
+        constrastButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.constrastWindow = ConstrastWindow()
 
-        toolbar.addWidget(constrastBtn)
+        toolbar.addWidget(constrastButton)
         toolbar.addSeparator()
 
-        flipHBtn = QToolButton()
-        flipHBtn.setText("水平")
-        flipHBtn.setIcon(QIcon("resource/flipH.png"))
-        flipHBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        flipVBtn = QToolButton()
-        flipVBtn.setText("垂直")
-        flipVBtn.setIcon(QIcon("resource/flipV.png"))
-        flipVBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        flipHButton = QToolButton()
+        flipHButton.setText("水平")
+        flipHButton.setIcon(QIcon("resource/flipH.png"))
+        flipHButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        flipVButton = QToolButton()
+        flipVButton.setText("垂直")
+        flipVButton.setIcon(QIcon("resource/flipV.png"))
+        flipVButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
-        toolbar.addWidget(flipHBtn)
-        toolbar.addWidget(flipVBtn)
+        toolbar.addWidget(flipHButton)
+        toolbar.addWidget(flipVButton)
         toolbar.addSeparator()
 
-        maskBtn = QToolButton()
-        maskBtn.setText("分割图")
-        maskBtn.setIcon(QIcon("resource/mask.png"))
-        maskBtn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        maskButton = QToolButton()
+        maskButton.setText("分割图")
+        maskButton.setIcon(QIcon("resource/mask.png"))
+        maskButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
-        toolbar.addWidget(maskBtn)
+        maskSlider = QSlider(Qt.Orientation.Horizontal)
+        maskSlider.setRange(0, 100)
+        maskSlider.setValue(50)
+        maskSlider.setSingleStep(1)
+        maskSlider.setFixedWidth(100)
+
+        toolbar.addWidget(maskButton)
+        toolbar.addWidget(maskSlider)
         toolbar.addSeparator()
 
         # 视图信息和切换信息
@@ -113,19 +124,28 @@ class ImageViewer(QWidget):
         toolInfoLayout.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
 
         font = QFont("黑体", 14)
-        self.viewInfo = QLabel()
-        self.viewInfo.setText(VIEW_NAME["t"])
-        self.viewInfo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.viewInfo.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
-        self.viewInfo.setFont(font)
-        self.slideInfo = QLabel()
-        self.slideInfo.setText("{:0>4d}|{:0>4d}".format(0, 0))
-        self.slideInfo.setFixedWidth(100)
-        self.slideInfo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.slideInfo.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
-        self.slideInfo.setFont(font)
-        toolInfoLayout.addWidget(self.viewInfo)
-        toolInfoLayout.addWidget(self.slideInfo)
+        self.viewName = QLabel()
+        self.viewName.setText(VIEW_NAME["t"])
+        self.viewName.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.viewName.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
+        self.viewName.setFont(font)
+        self.positionCurrent = QLineEdit()
+        self.positionCurrent.setText("0")
+        self.positionCurrent.setFixedWidth(50)
+        self.positionCurrent.setValidator(QIntValidator())
+        self.positionCurrent.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.positionCurrent.setStyleSheet("background-color:transparent; color: rgb(0, 0, 255)")
+        self.positionCurrent.setFont(font)
+        self.positionMax = QLabel()
+        self.positionMax.setText(str(0))
+        self.positionMax.setFixedWidth(50)
+        self.positionMax.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.positionMax.setStyleSheet("background-color:transparent; color: rgb(0, 0, 255)")
+        self.positionMax.setFont(font)
+
+        toolInfoLayout.addWidget(self.positionCurrent)
+        toolInfoLayout.addWidget(self.viewName)
+        toolInfoLayout.addWidget(self.positionMax)
 
         self.view = GraphicsView("t", self)
 
@@ -137,21 +157,26 @@ class ImageViewer(QWidget):
         self.resize(1920, 1080)
 
         # 绑定函数
-        resetBtn.clicked.connect(self.activateReset)
-        arrowBtn.clicked.connect(self.deactivateDragMode)
-        dragBtn.clicked.connect(self.activateDragMode)
-        resizeBtn.clicked.connect(self.activateResizeMode)
-        slideBtn.clicked.connect(self.activateSlideMode)
-        constrastBtn.clicked.connect(self.activateConstrastWindow)
-        flipHBtn.clicked.connect(self.flipHorizontal)
-        flipVBtn.clicked.connect(self.flipVertical)
-        maskBtn.clicked.connect(self.openMask)
+        resetButton.clicked.connect(self.activateReset)
+        arrowButton.clicked.connect(self.deactivateDragMode)
+        dragButton.clicked.connect(self.activateDragMode)
+        resizeButton.clicked.connect(self.activateResizeMode)
+        slideButton.clicked.connect(self.activateSlideMode)
+        constrastButton.clicked.connect(self.activateConstrastWindow)
+        flipHButton.clicked.connect(self.flipHorizontal)
+        flipVButton.clicked.connect(self.flipVertical)
+        maskButton.clicked.connect(self.openMask)
+        maskSlider.valueChanged.connect(self.adjustMaskOpacity)
 
         viewS.triggered.connect(self.setViewS)
         viewC.triggered.connect(self.setViewC)
         viewT.triggered.connect(self.setViewT)
 
-        self.view.positionChanged.connect(self.setSlideInfo)
+        self.view.positionChanged.connect(self.setPosition)
+        self.positionCurrent.editingFinished.connect(self.setCurrentPlane)
+        self.positionCurrent.textEdited.connect(self.validatePosition)
+
+        self.opacityChanged.connect(self.view.setLabelItemOpacity)
 
     # 复原
     def activateReset(self):
@@ -186,12 +211,15 @@ class ImageViewer(QWidget):
         if self.view.label is not None:
             self.view.setLabelItem(self.view.label.plane_origin(self.view.view, self.view.position))
 
+    # 水平翻转
     def flipHorizontal(self):
         self.view.horizontalFlip()
 
+    # 垂直翻转
     def flipVertical(self):
         self.view.verticalFlip()
 
+    # 打开分割图
     def openMask(self):
         filename = QFileDialog().getOpenFileName(self, "选择文件", "./", filter="NIFTI(*.nii *.nii.gz);;")
         if len(filename[0]) == 0:
@@ -200,20 +228,42 @@ class ImageViewer(QWidget):
         maskImage = ReadNIFTI(filename[0], True)
         self.setLabel(maskImage)
 
+    # 调整分割图透明度
+    def adjustMaskOpacity(self, v: float):
+        self.opacityChanged.emit(v * 0.01)
+
     def setViewS(self):
         self.view.setView("s")
-        self.viewInfo.setText(VIEW_NAME["s"])
+        self.viewName.setText(VIEW_NAME["s"])
+        self.positionCurrent.setText(str(self.view.position))
+        self.positionMax.setText(str(self.view.position_max))
 
     def setViewC(self):
         self.view.setView("c")
-        self.viewInfo.setText(VIEW_NAME["c"])
+        self.viewName.setText(VIEW_NAME["c"])
+        self.positionCurrent.setText(str(self.view.position))
+        self.positionMax.setText(str(self.view.position_max))
 
     def setViewT(self):
         self.view.setView("t")
-        self.viewInfo.setText(VIEW_NAME["t"])
+        self.viewName.setText(VIEW_NAME["t"])
+        self.positionCurrent.setText(str(self.view.position))
+        self.positionMax.setText(str(self.view.position_max))
 
-    def setSlideInfo(self, text: str):
-        self.slideInfo.setText(text)
+    def setPosition(self, p: int):
+        self.positionCurrent.setText(str(p))
+
+    def setCurrentPlane(self):
+        self.view.position = int(self.positionCurrent.text())
+        self.view.setCurrentPlane()
+
+    def validatePosition(self, t: str):
+        if t == "" or int(t) < 1:
+            self.positionCurrent.setText("1")
+        elif int(t) > self.view.position_max:
+            self.positionCurrent.setText(str(self.view.position_max))
+        else:
+            pass
 
     def setImage(self, image: MedicalImage):
         mi, ma = image.array.min(), image.array.max()
@@ -222,6 +272,8 @@ class ImageViewer(QWidget):
         self.constrastWindow.editWindowLevel.setText(f"{(mi + ma) / 2:.2f}")
         self.constrastWindow.editWindowWidth.setText(f"{ma- mi:.2f}")
         self.view.setImage(image)
+        self.positionCurrent.setText(str(self.view.position))
+        self.positionMax.setText(str(self.view.position_max))
 
     def setLabel(self, label: MedicalImage):
         self.view.setLabel(label)

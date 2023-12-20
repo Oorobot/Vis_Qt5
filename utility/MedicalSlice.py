@@ -19,7 +19,7 @@ class MedicalSlice(object):
         self._patient_name = str(dicom.PatientName) if hasattr(dicom, "PatientName") else "Anonym"
 
         self._height, self._width = int(dicom.Rows), int(dicom.Columns)
-        self._depth = int(dicom.NumberOfFrames) if hasattr(dicom, "NumberOfFrames") else 1
+        self._depth = int(dicom.NumberOfFrames) if hasattr(dicom, "NumberOfFrames") else 0
 
         self._origin = (
             [float(_) for _ in dicom.ImagePositionPatient]

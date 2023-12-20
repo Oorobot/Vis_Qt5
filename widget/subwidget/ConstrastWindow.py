@@ -8,7 +8,8 @@ class ConstrastWindow(QWidget):
 
     def __init__(self, mi=0.0, ma=0.0, parent: QWidget = None) -> None:
         super().__init__(parent)
-        self.resize(300, 100)
+
+        self.setFixedSize(400, 150)
 
         self.setWindowTitle("对比度")
         validator = QDoubleValidator(self)
@@ -65,16 +66,16 @@ class ConstrastWindow(QWidget):
         layout2.addWidget(labelWindowWidth)
         layout2.addWidget(self.editWindowWidth)
 
-        btn = QPushButton()
-        btn.setText("确定")
-        btn.setFixedWidth(80)
+        button = QPushButton()
+        button.setText("确定")
+        button.setFixedWidth(80)
 
         layout = QVBoxLayout()
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(layout1)
         layout.addLayout(layout2)
-        layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         self.setLayout(layout)
 
@@ -87,7 +88,7 @@ class ConstrastWindow(QWidget):
         self.editWindowWidth.editingFinished.connect(lambda: self.valueChanged("level_width"))
 
         #
-        btn.clicked.connect(self.clicked)
+        button.clicked.connect(self.clicked)
 
     def valueChanged(self, param: str):
         if param == "min_max":
