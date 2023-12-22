@@ -3,9 +3,9 @@ from PyQt6.QtGui import QFont, QIcon, QIntValidator
 from PyQt6.QtWidgets import (
     QFileDialog,
     QGraphicsView,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMainWindow,
     QMenu,
     QSizePolicy,
     QSlider,
@@ -16,22 +16,50 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from utility.constant import VIEW_NAME
+from utility.constant import VIEW_TO_NAME
 from utility.io import ReadNIFTI
 from utility.MedicalImage import MedicalImage
 from widget.GraphicsView import GraphicsView
 from widget.subwidget.ConstrastWindow import ConstrastWindow
 
 
-class ImageViewer(QWidget):
+class ImageViewer(QMainWindow):
     opacityChanged = pyqtSignal(float)
 
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
 
-        toolbar = QToolBar(self)
+        toolbar = QToolBar()
         toolbar.setMovable(False)
         toolbar.setFloatable(False)
+
+        # 视图和位置信息
+        font = QFont("黑体", 14)
+        self.viewName = QLabel()
+        self.viewName.setText(VIEW_TO_NAME["t"])
+        self.viewName.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.viewName.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
+        self.viewName.setFont(font)
+        self.positionCurrent = QLineEdit()
+        self.positionCurrent.setText("0")
+        self.positionCurrent.setFixedWidth(50)
+        self.positionCurrent.setValidator(QIntValidator())
+        self.positionCurrent.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.positionCurrent.setStyleSheet("background-color:transparent; color: rgb(0, 0, 255)")
+        self.positionCurrent.setFont(font)
+        self.positionCurrent.setStyleSheet("background-color: transparent;border: none;color: #1E1E1E;")
+        self.positionMax = QLabel()
+        self.positionMax.setText(str(0))
+        self.positionMax.setFixedWidth(50)
+        self.positionMax.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.positionMax.setStyleSheet("background-color:transparent; color: rgb(0, 0, 255)")
+        self.positionMax.setFont(font)
+
+        toolbar.addWidget(self.viewName)
+        toolbar.addWidget(self.positionMax)
+        toolbar.addSeparator()
+        toolbar.addWidget(self.positionCurrent)
+        toolbar.addSeparator()
 
         resetButton = QToolButton()
         resetButton.setText("复原")
@@ -103,57 +131,27 @@ class ImageViewer(QWidget):
         toolbar.addWidget(flipVButton)
         toolbar.addSeparator()
 
-        maskButton = QToolButton()
-        maskButton.setText("分割图")
-        maskButton.setIcon(QIcon("resource/mask.png"))
-        maskButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        labelButton = QToolButton()
+        labelButton.setText("分割图")
+        labelButton.setIcon(QIcon("resource/label.png"))
+        labelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
-        maskSlider = QSlider(Qt.Orientation.Horizontal)
-        maskSlider.setRange(0, 100)
-        maskSlider.setValue(50)
-        maskSlider.setSingleStep(1)
-        maskSlider.setFixedWidth(100)
+        labelSlider = QSlider(Qt.Orientation.Horizontal)
+        labelSlider.setRange(0, 100)
+        labelSlider.setValue(50)
+        labelSlider.setSingleStep(1)
+        labelSlider.setMinimumWidth(50)
+        labelSlider.setMaximumWidth(100)
 
-        toolbar.addWidget(maskButton)
-        toolbar.addWidget(maskSlider)
+        toolbar.addWidget(labelButton)
+        toolbar.addWidget(labelSlider)
         toolbar.addSeparator()
-
-        # 视图信息和切换信息
-        toolInfoLayout = QHBoxLayout()
-        toolInfoLayout.addWidget(toolbar)
-        toolInfoLayout.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
-
-        font = QFont("黑体", 14)
-        self.viewName = QLabel()
-        self.viewName.setText(VIEW_NAME["t"])
-        self.viewName.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.viewName.setStyleSheet("background-color:transparent; color: rgb(255, 0, 0)")
-        self.viewName.setFont(font)
-        self.positionCurrent = QLineEdit()
-        self.positionCurrent.setText("0")
-        self.positionCurrent.setFixedWidth(50)
-        self.positionCurrent.setValidator(QIntValidator())
-        self.positionCurrent.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.positionCurrent.setStyleSheet("background-color:transparent; color: rgb(0, 0, 255)")
-        self.positionCurrent.setFont(font)
-        self.positionMax = QLabel()
-        self.positionMax.setText(str(0))
-        self.positionMax.setFixedWidth(50)
-        self.positionMax.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.positionMax.setStyleSheet("background-color:transparent; color: rgb(0, 0, 255)")
-        self.positionMax.setFont(font)
-
-        toolInfoLayout.addWidget(self.positionCurrent)
-        toolInfoLayout.addWidget(self.viewName)
-        toolInfoLayout.addWidget(self.positionMax)
 
         self.view = GraphicsView("t", self)
 
-        layout = QVBoxLayout()
-        layout.addLayout(toolInfoLayout)
-        layout.addWidget(self.view)
+        self.addToolBar(toolbar)
+        self.setCentralWidget(self.view)
 
-        self.setLayout(layout)
         self.resize(1920, 1080)
 
         # 绑定函数
@@ -165,12 +163,12 @@ class ImageViewer(QWidget):
         constrastButton.clicked.connect(self.activateConstrastWindow)
         flipHButton.clicked.connect(self.flipHorizontal)
         flipVButton.clicked.connect(self.flipVertical)
-        maskButton.clicked.connect(self.openMask)
-        maskSlider.valueChanged.connect(self.adjustMaskOpacity)
+        labelButton.clicked.connect(self.openLabel)
+        labelSlider.valueChanged.connect(self.adjustLabelOpacity)
 
-        viewS.triggered.connect(self.setViewS)
-        viewC.triggered.connect(self.setViewC)
-        viewT.triggered.connect(self.setViewT)
+        viewS.triggered.connect(lambda: self.setView("s"))
+        viewC.triggered.connect(lambda: self.setView("c"))
+        viewT.triggered.connect(lambda: self.setView("t"))
 
         self.view.positionChanged.connect(self.setPosition)
         self.positionCurrent.editingFinished.connect(self.setCurrentPlane)
@@ -220,33 +218,21 @@ class ImageViewer(QWidget):
         self.view.verticalFlip()
 
     # 打开分割图
-    def openMask(self):
+    def openLabel(self):
         filename = QFileDialog().getOpenFileName(self, "选择文件", "./", filter="NIFTI(*.nii *.nii.gz);;")
         if len(filename[0]) == 0:
             return
 
-        maskImage = ReadNIFTI(filename[0], True)
-        self.setLabel(maskImage)
+        labelImage = ReadNIFTI(filename[0], True)
+        self.view.setLabel(labelImage)
 
     # 调整分割图透明度
-    def adjustMaskOpacity(self, v: float):
+    def adjustLabelOpacity(self, v: int):
         self.opacityChanged.emit(v * 0.01)
 
-    def setViewS(self):
-        self.view.setView("s")
-        self.viewName.setText(VIEW_NAME["s"])
-        self.positionCurrent.setText(str(self.view.position))
-        self.positionMax.setText(str(self.view.position_max))
-
-    def setViewC(self):
-        self.view.setView("c")
-        self.viewName.setText(VIEW_NAME["c"])
-        self.positionCurrent.setText(str(self.view.position))
-        self.positionMax.setText(str(self.view.position_max))
-
-    def setViewT(self):
-        self.view.setView("t")
-        self.viewName.setText(VIEW_NAME["t"])
+    def setView(self, v: str):
+        self.view.setView(v)
+        self.viewName.setText(VIEW_TO_NAME[v])
         self.positionCurrent.setText(str(self.view.position))
         self.positionMax.setText(str(self.view.position_max))
 
@@ -274,9 +260,6 @@ class ImageViewer(QWidget):
         self.view.setImage(image)
         self.positionCurrent.setText(str(self.view.position))
         self.positionMax.setText(str(self.view.position_max))
-
-    def setLabel(self, label: MedicalImage):
-        self.view.setLabel(label)
 
 
 if __name__ == "__main__":

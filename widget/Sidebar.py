@@ -28,11 +28,10 @@ class Sidebar(QWidget):
         self.checkedChildren: List[str] = []
         self.collapsibleWidgets: Dict[str, CollapsibleWidget] = {}
 
-        self.setMinimumWidth(380)
-        self.setMinimumHeight(560)
+        self.setMinimumWidth(150)
 
         layout = QHBoxLayout()
-        layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        layout.setAlignment(Qt.AlignmentFlag.AlignRight)
 
         layoutMain = QVBoxLayout()
         self.widgetMain = QWidget()
@@ -113,23 +112,9 @@ class Sidebar(QWidget):
         scrollArea.setWidgetResizable(True)
         layoutMain.addWidget(scrollArea)
 
-        # 侧边隐藏按钮
-        self.hideButton = QToolButton(self)
-        self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
-        self.hideButton.setFixedHeight(60)
-        self.hideButton.setFixedWidth(15)
-        layoutHide = QVBoxLayout()
-        layoutHide.setSpacing(0)
-        layoutHide.setContentsMargins(0, 0, 0, 0)
-        layoutHide.addItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
-        layoutHide.addWidget(self.hideButton)
-        layoutHide.addItem(QSpacerItem(10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
-        layout.addLayout(layoutHide)
-
         self.setLayout(layout)
 
-        # 绑定
-        self.hideButton.clicked.connect(self.hideButtonClicked)
+        # 信号与槽
         openButton.clicked.connect(self.openButtonClicked)
         display2DButton.clicked.connect(self.display2DButtonClicked)
         display3DButton.clicked.connect(self.display3DButtonClicked)
@@ -167,16 +152,6 @@ class Sidebar(QWidget):
                     self.collapsibleWidgets[widget_uid].children[child_uid].radioButton.setChecked(False)
         else:
             self.checkedChildren.remove(widget_uid + "_^_" + child_uid)
-
-    def hideButtonClicked(self):
-        if self.widgetMain.isVisible():
-            self.widgetMain.setVisible(False)
-            self.hideButton.setArrowType(Qt.ArrowType.RightArrow)
-            self.setMinimumWidth(0)
-        else:
-            self.widgetMain.setVisible(True)
-            self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
-            self.setMinimumWidth(320)
 
     def openButtonClicked(self):
         filename = QFileDialog().getOpenFileName(

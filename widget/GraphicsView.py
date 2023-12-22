@@ -1,4 +1,3 @@
-import colorsys
 from typing import Union
 
 import cv2
@@ -25,20 +24,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from utility.common import get_colors
 from utility.MedicalImage import MedicalImage
-
-np.random.seed(66)
-
-
-def _get_colors(num):
-    assert num > 0
-    colors = []
-    for i in np.arange(0.0, 360.0, 360.0 / num):
-        hue = i / 360
-        lightness = (50 + np.random.rand() * 10) / 100.0
-        saturation = (90 + np.random.rand() * 10) / 100.0
-        colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
-    return colors
 
 
 class ImageItem(QGraphicsPixmapItem):
@@ -81,10 +68,12 @@ class LabelItem(QGraphicsPixmapItem):
 
         if num_color == 0:
             return
-        colors = _get_colors(num_color)
+
+        colors = get_colors(num_color)
+
         for i in range(1, num_color + 1):
-            uint8_i = (array == i).astype(np.uint8)
-            contours, _ = cv2.findContours(uint8_i, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            arr = np.where(array == i, 1, 0).astype(np.uint8)
+            contours, _ = cv2.findContours(arr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             path = QPainterPath()
             for contour in contours:
                 path.addPolygon(QPolygonF([QPointF(c[0] + self.left, c[1] + self.top) for c in contour[:, 0, :]]))

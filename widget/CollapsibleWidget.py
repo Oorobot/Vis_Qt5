@@ -34,7 +34,7 @@ class CollapsibleChild(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.setFixedHeight(30)
-        self.setMaximumWidth(300)
+        self.setMinimumWidth(150)
 
         # 样式
         self.radioButton.setObjectName("RadioButton")
@@ -95,7 +95,7 @@ class CollapsibleWidget(QWidget):
         # 样式
         self.collapsibleButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.collapsibleButton.setFixedHeight(40)
-        self.collapsibleButton.setFixedWidth(300)
+        self.collapsibleButton.setMinimumWidth(150)
         self.collapsibleButton.setIconSize(QSize(25, 25))
         self.collapsibleButton.setObjectName("CollapsibleButton")
         self.collapsibleButton.setStyleSheet(

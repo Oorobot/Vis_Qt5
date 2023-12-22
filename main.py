@@ -22,23 +22,30 @@ class Main(QMainWindow):
 
         widget = QWidget(self)
         self.setCentralWidget(widget)
-
         layout = QHBoxLayout(widget)
 
+        # 侧边栏
         self.sidebar = Sidebar(self)
         layout.addWidget(self.sidebar, 1)
+
+        # 侧边栏隐藏按钮
+        self.hideButton = QToolButton(self)
+        self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
+        self.hideButton.setFixedHeight(60)
+        self.hideButton.setFixedWidth(15)
+        layout.addWidget(self.hideButton)
+
+        # 标签页
         self.tabWidget = QTabWidget(self)
         layout.addWidget(self.tabWidget, 4)
 
-        self.resize(1920, 1080)
-        self.show()
-
-        # 设置属性
-        self.tabWidget.setStyleSheet("background-color:black;background:transparent;")
-        self.tabWidget.setTabsClosable(True)
-
         # 信号与槽
         self.sidebar.displayImage2D.connect(self.addTab)
+        self.hideButton.clicked.connect(self.hideButtonClicked)
+
+        # 样式
+        self.resize(1920, 1080)
+        self.show()
 
     def addTab(self, uid, title, image):
         if uid in self.tabs:
@@ -48,7 +55,7 @@ class Main(QMainWindow):
             index = self.tabWidget.addTab(viewer, title)
             self.tabWidget.setCurrentIndex(index)
 
-            # 创建关闭按钮
+            # 关闭按钮
             tabCloseButton = QToolButton()
             tabCloseButton.setIcon(QIcon("resource/close.png"))
             tabCloseButton.setStyleSheet("background-color:transparent")
@@ -64,6 +71,17 @@ class Main(QMainWindow):
     def removeTab(self, index):
         self.tabWidget.removeTab(index)
         self.tabs.pop(index)
+
+    def hideButtonClicked(self):
+        layout: QHBoxLayout = self.centralWidget().layout()
+        if self.sidebar.isVisible():
+            self.sidebar.setVisible(False)
+            self.hideButton.setArrowType(Qt.ArrowType.RightArrow)
+            layout.setStretch(0, 0)
+        else:
+            self.sidebar.setVisible(True)
+            self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
+            layout.setStretch(0, 1)
 
 
 if __name__ == "__main__":

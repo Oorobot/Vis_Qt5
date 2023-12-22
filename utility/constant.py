@@ -43,6 +43,8 @@ DICOM_TAGS = {
     "0018|1075": "Radionuclide Half Life",
 }
 
+VIEW_TO_INT = {"s": 0, "c": 1, "t": 2}
 
-VIEW_INT = {"s": 0, "c": 1, "t": 2}
-VIEW_NAME = {"s": "矢状面", "c": "冠状面", "t": "横截面"}
+VIEW_TO_NAME = {"s": "矢状面", "c": "冠状面", "t": "横截面"}
+
+LABEL_TO_NAME = {1: "Infected", 2: "Non-infected", 3: "Bladder"}

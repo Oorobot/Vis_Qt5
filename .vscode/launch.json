@@ -26,6 +26,13 @@
             "justMyCode": true
         },
         {
+            "name": "vtk",
+            "type": "python",
+            "request": "launch",
+            "module": "widget.VTKWidget",
+            "justMyCode": true
+        },
+        {
             "name": "main",
             "type": "python",
             "request": "launch",
