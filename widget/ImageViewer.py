@@ -132,7 +132,7 @@ class ImageViewer(QMainWindow):
         toolbar.addSeparator()
 
         labelButton = QToolButton()
-        labelButton.setText("分割图")
+        labelButton.setText("标签")
         labelButton.setIcon(QIcon("resource/label.png"))
         labelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 

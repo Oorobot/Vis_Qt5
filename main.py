@@ -11,8 +11,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from utility.MedicalImage import MedicalImage
 from widget.ImageViewer import ImageViewer
 from widget.Sidebar import Sidebar
+from widget.VTKWidget import VTKWidget
 
 
 class Main(QMainWindow):
@@ -41,19 +43,29 @@ class Main(QMainWindow):
 
         # 信号与槽
         self.sidebar.displayImage2D.connect(self.addTab)
+        self.sidebar.displayImage3D.connect(self.addTab)
         self.hideButton.clicked.connect(self.hideButtonClicked)
 
         # 样式
         self.resize(1920, 1080)
         self.show()
 
-    def addTab(self, uid, title, image):
+    def addTab(self, uid: str, title: str, image: MedicalImage):
         if uid in self.tabs:
             self.tabWidget.setCurrentIndex(self.tabs.index(uid))
         else:
-            viewer = ImageViewer()
-            index = self.tabWidget.addTab(viewer, title)
-            self.tabWidget.setCurrentIndex(index)
+            if uid.endswith("2D"):
+                viewer = ImageViewer()
+                index = self.tabWidget.addTab(viewer, title)
+                self.tabWidget.setCurrentIndex(index)
+                # 重置图像大小
+                viewer.setImage(image)
+                viewer.view.reset()
+            if uid.endswith("3D"):
+                vtkViewer = VTKWidget()
+                vtkViewer.addVolume(image)
+                index = self.tabWidget.addTab(vtkViewer, title)
+                self.tabWidget.setCurrentIndex(index)
 
             # 关闭按钮
             tabCloseButton = QToolButton()
@@ -63,9 +75,6 @@ class Main(QMainWindow):
             tabCloseButton.clicked.connect(lambda: self.removeTab(self.tabs.index(uid)))
             self.tabWidget.tabBar().setTabButton(index, QTabBar.ButtonPosition.RightSide, tabCloseButton)
 
-            # 重置图像大小
-            viewer.setImage(image)
-            viewer.view.reset()
             self.tabs.append(uid)
 
     def removeTab(self, index):

@@ -8,7 +8,7 @@ import vtkmodules.vtkRenderingOpenGL2
 import vtkmodules.vtkRenderingVolumeOpenGL2
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QToolBar, QToolButton, QWidget
+from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QSlider, QToolBar, QToolButton, QWidget
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 # noinspection PyUnresolvedReferences
@@ -28,27 +28,39 @@ class VTKWidget(QMainWindow):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
+        self.labelOpacity = 0.5
+        self.cubeActors, self.textActors = [], []
 
         toolbar = QToolBar()
         toolbar.setMovable(False)
 
         labelButton = QToolButton()
-        labelButton.setText("分割图")
+        labelButton.setText("标签")
         labelButton.setIcon(QIcon("resource/label.png"))
         labelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
+        labelSlider = QSlider(Qt.Orientation.Horizontal)
+        labelSlider.setRange(0, 100)
+        labelSlider.setValue(50)
+        labelSlider.setSingleStep(1)
+        labelSlider.setMinimumWidth(50)
+        labelSlider.setMaximumWidth(100)
+
         toolbar.addWidget(labelButton)
+        toolbar.addWidget(labelSlider)
+        toolbar.addSeparator()
 
         widget = QVTKRenderWindowInteractor()
         self.ren = vtkRenderer()
         widget.GetRenderWindow().AddRenderer(self.ren)
 
-        # 信号与槽
-        labelButton.clicked.connect(self.openLabel)
-
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
         self.setCentralWidget(widget)
         self.ren.SetBackground(1.0, 1.0, 1.0)
+
+        # 信号与槽
+        labelButton.clicked.connect(self.openLabel)
+        labelSlider.valueChanged.connect(self.adjustLabelOpacity)
 
         widget.Initialize()
         widget.Start()
@@ -104,9 +116,13 @@ class VTKWidget(QMainWindow):
                 # 依次添加
                 colors = get_colors(num_colors)
                 for c, l in zip(classes, labels):
-                    cube, text = BoundingBox(l[0], l[1], self.origin, self.spacing, colors[c - 1], LABEL_TO_NAME[c])
+                    cube, text = BoundingBox(
+                        l[0], l[1], self.origin, self.spacing, colors[c - 1], LABEL_TO_NAME[c], self.labelOpacity
+                    )
                     self.ren.AddActor(cube)
                     self.ren.AddActor(text)
+                    self.cubeActors.append(cube)
+                    self.textActors.append(text)
 
             elif filename[0].endswith(".json"):
                 labelJson = json.load(open(filename[0], "r"))
@@ -130,9 +146,11 @@ class VTKWidget(QMainWindow):
                 colors = get_colors(num_colors)
                 c2c = {c1: c2 for c1, c2 in zip(unique_classes, colors)}
                 for c, l in zip(classes, labels):
-                    cube, text = BoundingBox(l[0:3], l[3:6], self.origin, self.spacing, c2c[c], c)
+                    cube, text = BoundingBox(l[0:3], l[3:6], self.origin, self.spacing, c2c[c], c, self.labelOpacity)
                     self.ren.AddActor(cube)
                     self.ren.AddActor(text)
+                    self.cubeActors.append(cube)
+                    self.textActors.append(text)
             else:
                 raise Exception("not support the file format.")
 
@@ -141,6 +159,14 @@ class VTKWidget(QMainWindow):
                 QMessageBox.Icon.Critical, "错误", "解析文件失败, " + str(e), QMessageBox.StandardButton.Close
             )
             messageBox.exec()
+
+    def adjustLabelOpacity(self, v: int):
+        self.labelOpacity = 0.01 * v
+        for actor in self.cubeActors:
+            actor.GetProperty().SetOpacity(self.labelOpacity)
+        for actor in self.textActors:
+            actor.GetTextProperty().SetOpacity(self.labelOpacity)
+        self.centralWidget().GetRenderWindow().Render()
 
 
 if __name__ == "__main__":

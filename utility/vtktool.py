@@ -131,6 +131,7 @@ def BoundingBox(
     spacing: Tuple[float],
     color: Tuple[float],
     text: str,
+    opacity: float,
 ):
     x1, y1, z1 = [o + p * s for o, p, s in zip(origin, point1, spacing)]
     x2, y2, z2 = [o + p * s for o, p, s in zip(origin, point2, spacing)]
@@ -182,6 +183,7 @@ def BoundingBox(
     cubeActor = vtkActor()
     cubeActor.SetMapper(cubeMapper)
     cubeActor.GetProperty().SetColor(*color)
+    cubeActor.GetProperty().SetOpacity(opacity)
 
     # 文本
     textActor = vtkTextActor3D()
@@ -190,6 +192,7 @@ def BoundingBox(
     textProperty = textActor.GetTextProperty()
     textProperty.SetColor(*color)
     textProperty.SetFontSize(28)
+    textProperty.SetOpacity(opacity)
 
     return cubeActor, textActor
 

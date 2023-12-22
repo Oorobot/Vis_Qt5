@@ -21,6 +21,7 @@ from widget.CollapsibleWidget import CollapsibleWidget
 
 class Sidebar(QWidget):
     displayImage2D = pyqtSignal(str, str, MedicalImage)
+    displayImage3D = pyqtSignal(str, str, MedicalImage)
 
     def __init__(self, parent: QWidget = None) -> None:
         # 初始化
@@ -172,7 +173,19 @@ class Sidebar(QWidget):
             self.displayImage2D.emit(uid + "2D", title, child.image)
 
     def display3DButtonClicked(self):
-        print("display3DButtonClicked...")
+        for uid in self.checkedChildren:
+            widget_uid, child_uid = uid.split("_^_")
+            widget = self.collapsibleWidgets[widget_uid]
+            child = widget.children[child_uid]
+            if child.image.modality == "CT" or child.image.modality == "PT":
+                title = widget.collapsibleButton.text().split(" ")[0] + " - " + child.radioButton.text().split(" ")[0]
+                self.displayImage2D.emit(uid + "3D", title, child.image)
+            else:
+                messageBox = QMessageBox(
+                    QMessageBox.Icon.Information, "提示", "该功能仅支持PET或CT三维成像。", QMessageBox.StandardButton.Ok
+                )
+                messageBox.exec()
+                return
 
     def displayFusionButtonClicked(self):
         print("displayFusionButtonClicked...")
