@@ -1,104 +1,14 @@
-from typing import Union
-
-import cv2
 import numpy as np
 from matplotlib.cm import get_cmap
-from matplotlib.colors import Colormap
-from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
-from PyQt6.QtGui import (
-    QBrush,
-    QColor,
-    QImage,
-    QPainter,
-    QPainterPath,
-    QPixmap,
-    QPolygonF,
-    QResizeEvent,
-    QTransform,
-    QWheelEvent,
-)
-from PyQt6.QtWidgets import (
-    QGraphicsPixmapItem,
-    QGraphicsScene,
-    QGraphicsView,
-    QMessageBox,
-    QStyleOptionGraphicsItem,
-    QWidget,
-)
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QPainter, QResizeEvent, QTransform, QWheelEvent
+from PyQt6.QtWidgets import QGraphicsView, QMessageBox, QWidget
 
-from utility.common import float_01_to_uint8_0255, get_colors
 from utility.MedicalImage import MedicalImage
-
-
-class ImageItem(QGraphicsPixmapItem):
-    def __init__(self, array: np.ndarray, colorMap: Colormap = None) -> None:
-        if colorMap is not None:
-            array = float_01_to_uint8_0255(colorMap(array))
-        # 初始化
-        image = QImage(
-            array.data.tobytes(),
-            array.shape[1],
-            array.shape[0],
-            array.shape[1] * 3,
-            QImage.Format.Format_RGB888,
-        )
-        pixmap = QPixmap.fromImage(image)
-        super(ImageItem, self).__init__(pixmap)
-
-        # 属性
-        self.w, self.h = self.pixmap().width(), self.pixmap().height()
-        self.left, self.top = round(-self.w / 2), round(-self.h / 2)
-
-    def boundingRect(self) -> QRectF:
-        return QRectF(self.left, self.top, self.w, self.h)
-
-    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: Union[QWidget, None]) -> None:
-        painter.drawPixmap(self.left, self.top, self.pixmap())
-
-
-class LabelItem(QGraphicsPixmapItem):
-    def __init__(self, array: np.ndarray, opacity: float = 0.5) -> None:
-        # 初始化
-        super(LabelItem, self).__init__()
-
-        # 属性
-        self.setOpacity(opacity)
-        self.w, self.h = array.shape[1], array.shape[0]
-        self.left, self.top = round(-self.w / 2), round(-self.h / 2)
-
-        # 找到需要标注的位置及其颜色
-        num_color = array.max()
-        self.paths = []
-
-        if num_color == 0:
-            return
-
-        colors = get_colors(num_color)
-
-        for i in range(1, num_color + 1):
-            arr = np.where(array == i, 1, 0).astype(np.uint8)
-            contours, _ = cv2.findContours(arr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            path = QPainterPath()
-            for contour in contours:
-                path.addPolygon(QPolygonF([QPointF(c[0] + self.left, c[1] + self.top) for c in contour[:, 0, :]]))
-            self.paths.append([path, colors[i - 1]])
-
-    def boundingRect(self) -> QRectF:
-        return QRectF(self.left, self.top, self.w, self.h)
-
-    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget) -> None:
-        for path in self.paths:
-            painter.fillPath(path[0], QColor(*[int(p * 255) for p in path[1]]))
-
-
-class GraphicsScene(QGraphicsScene):
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        # 默认黑色背景
-        self.setBackgroundBrush(QBrush(QColor("#000000")))
-
-    def setBackGroudColor(self, color: QColor):
-        self.setBackgroundBrush(QBrush(color))
+from utility.MedicalImage2 import MedicalImage2
+from widget.subview.GraphicsScene import GraphicsScene
+from widget.subview.ImageItem import ImageItem
+from widget.subview.LabelItem import LabelItem
 
 
 class GraphicsView(QGraphicsView):
