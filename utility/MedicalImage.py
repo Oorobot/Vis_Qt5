@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 import numpy as np
+import SimpleITK as sitk
 
 
 class MedicalImage:
@@ -16,17 +17,16 @@ class MedicalImage:
     ):
         self.array = array
         self.size = size
-        self.spacing = spacing
         self.origin = origin
+        self.spacing = spacing
         self.direction = direction
         self.modality = modality
-
         self.channel = (
             channel if channel is not None else 1 if len(self.array.shape) == len(self.size) else self.array.shape[-1]
         )
-        assert self.channel == 1 or self.channel == 3, f"not support channel = {self.channel}."
 
-        assert len(self.size) == 3, f"not support Medical Image's size = {str(self.size)}."
+        assert self.channel == 1 or self.channel == 3, f"not support channel = {self.channel}."
+        assert len(self.size) == 3, f"not support Medical Image's dimension = {len(self.size)}."
 
         self.array_norm = None
         self.normlize()
@@ -43,6 +43,21 @@ class MedicalImage:
             _array = self.array
         self.array_norm = _array.astype(np.uint8)
 
+    def plane(self, view: str, pos: int):
+        """
+        get the origin plane of Medical Image
+        :param view: Sagittal, Coronal, Transverse
+        :param pos: the position
+        """
+        if view == "s":
+            return self.array[:, :, pos - 1, ...]
+        elif view == "c":
+            return self.array[:, pos - 1, ...]
+        elif view == "t":
+            return self.array[pos - 1, ...]
+        else:
+            raise Exception(f"not support view = {view}.")
+
     def plane_norm(self, view: str, pos: int):
         """
         get the normalized plane of Medical Image
@@ -58,17 +73,9 @@ class MedicalImage:
         else:
             raise Exception(f"not support view = {view}.")
 
-    def plane_origin(self, view: str, pos: int):
-        """
-        get the origin plane of Medical Image
-        :param view: Sagittal, Coronal, Transverse
-        :param pos: the position
-        """
-        if view == "s":
-            return self.array[:, :, pos - 1, ...]
-        elif view == "c":
-            return self.array[:, pos - 1, ...]
-        elif view == "t":
-            return self.array[pos - 1, ...]
-        else:
-            raise Exception(f"not support view = {view}.")
+    def to_sitk_image(self) -> sitk.Image:
+        sitkImage = sitk.GetImageFromArray(self.array)
+        sitkImage.SetOrigin(self.origin)
+        sitkImage.SetSpacing(self.spacing)
+        sitkImage.SetDirection(self.direction)
+        return sitkImage

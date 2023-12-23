@@ -2,6 +2,8 @@ from typing import Union
 
 import cv2
 import numpy as np
+from matplotlib.cm import get_cmap
+from matplotlib.colors import Colormap
 from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
 from PyQt6.QtGui import (
     QBrush,
@@ -24,19 +26,21 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from utility.common import get_colors
+from utility.common import float_01_to_uint8_0255, get_colors
 from utility.MedicalImage import MedicalImage
 
 
 class ImageItem(QGraphicsPixmapItem):
-    def __init__(self, array: np.ndarray, channel: int) -> None:
+    def __init__(self, array: np.ndarray, colorMap: Colormap = None) -> None:
+        if colorMap is not None:
+            array = float_01_to_uint8_0255(colorMap(array))
         # 初始化
         image = QImage(
             array.data.tobytes(),
             array.shape[1],
             array.shape[0],
-            array.shape[1] * channel,
-            QImage.Format.Format_Grayscale8 if channel == 1 else QImage.Format.Format_RGB888,
+            array.shape[1] * 3,
+            QImage.Format.Format_RGB888,
         )
         pixmap = QPixmap.fromImage(image)
         super(ImageItem, self).__init__(pixmap)
@@ -90,7 +94,7 @@ class LabelItem(QGraphicsPixmapItem):
 class GraphicsScene(QGraphicsScene):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        # 设置背景为黑色
+        # 默认黑色背景
         self.setBackgroundBrush(QBrush(QColor("#000000")))
 
     def setBackGroudColor(self, color: QColor):
@@ -107,6 +111,8 @@ class GraphicsView(QGraphicsView):
         self.imageItem, self.labelItem = None, None
         self.__position = self.__positionMax = {"s": 1, "c": 1, "t": 1}
 
+        self.colorMap = None
+
         self.scaleFactor = 1.05
         self.__scaleDefault = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
 
@@ -116,8 +122,8 @@ class GraphicsView(QGraphicsView):
 
         # 初始化
         super().__init__(parent)
-
-        self.setScene(GraphicsScene())
+        self.__scene = GraphicsScene()
+        self.setScene(self.__scene)
 
         # 抗锯齿
         self.setRenderHints(
@@ -198,11 +204,12 @@ class GraphicsView(QGraphicsView):
         if self.image is not None:
             self.setImageItem(self.image.plane_norm(self.view, self.position))
         if self.label is not None:
-            self.setLabelItem(self.label.plane_origin(self.view, self.position))
+            self.setLabelItem(self.label.plane(self.view, self.position))
 
     # 切换图像
     def setImage(self, image: MedicalImage):
         self.image = image
+        # 位置信息
         self.__position = {
             "s": self.image.size[0] // 2 + 1,
             "c": self.image.size[1] // 2 + 1,
@@ -213,7 +220,20 @@ class GraphicsView(QGraphicsView):
             "c": self.image.size[1],
             "t": self.image.size[2],
         }
+        # 映射颜色图
+        if image.modality == "CT":
+            self.colorMap = get_cmap("gray")
+        elif image.modality == "PT" or image.modality == "NM":
+            self.colorMap = get_cmap("binary")
+        else:
+            if image.channel == 1:
+                self.colorMap = get_cmap("gray")
+        # 设置背景色
+        if self.colorMap is not None:
+            self.__scene.setBackGroudColor(QColor(*[round(_ * 255) for _ in self.colorMap(0)]))
+        # 初始化缩放信息
         self.reset()
+        # 添加图像
         self.setImageItem(self.image.plane_norm(self.view, self.position))
 
     # 设置ImageItem
@@ -223,7 +243,7 @@ class GraphicsView(QGraphicsView):
         else:
             self.reset()  # 缩放
 
-        self.imageItem = ImageItem(imageArray, self.image.channel)
+        self.imageItem = ImageItem(imageArray, self.colorMap)
         self.scene().addItem(self.imageItem)
 
     def setLabel(self, label: MedicalImage):
@@ -235,7 +255,7 @@ class GraphicsView(QGraphicsView):
             messageBox.exec()
         else:
             self.label = label
-            self.setLabelItem(self.label.plane_origin(self.view, self.position))
+            self.setLabelItem(self.label.plane(self.view, self.position))
 
     def setLabelItem(self, labelArray: np.ndarray):
         if self.labelItem is not None:
@@ -253,7 +273,7 @@ class GraphicsView(QGraphicsView):
         if self.image is not None:
             self.setImageItem(self.image.plane_norm(self.view, self.position))
         if self.label is not None:
-            self.setLabelItem(self.label.plane_origin(self.view, self.position))
+            self.setLabelItem(self.label.plane(self.view, self.position))
 
     # 水平镜像
     def horizontalFlip(self):

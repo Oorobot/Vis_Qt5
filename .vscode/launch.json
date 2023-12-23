@@ -12,6 +12,13 @@
             "justMyCode": true
         },
         {
+            "name": "MedicalImage2",
+            "type": "python",
+            "request": "launch",
+            "module": "utility.MedicalImage2",
+            "justMyCode": true
+        },
+        {
             "name": "ImageViewer",
             "type": "python",
             "request": "launch",

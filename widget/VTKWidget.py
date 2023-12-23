@@ -1,7 +1,6 @@
 import json
 import math
 
-import numpy as np
 import vtkmodules.vtkInteractionStyle
 import vtkmodules.vtkRenderingAnnotation
 import vtkmodules.vtkRenderingOpenGL2

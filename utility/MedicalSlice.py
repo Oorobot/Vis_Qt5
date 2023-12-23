@@ -9,107 +9,75 @@ class MedicalSlice(object):
     def __init__(self, file: str) -> None:
         dicom = dcmread(file)
 
-        self._study_uid = dicom.StudyInstanceUID if hasattr(dicom, "StudyInstanceUID") else (generate_uid())
-        self._study_date = dicom.StudyDate if hasattr(dicom, "StudyDate") else "00000000"
-        self._study_time = dicom.StudyTime if hasattr(dicom, "StudyTime") else "000000"
+        self.study_uid = dicom.StudyInstanceUID if hasattr(dicom, "StudyInstanceUID") else (generate_uid())
+        self.__study_date = dicom.StudyDate if hasattr(dicom, "StudyDate") else "00000000"
+        self.__study_time = dicom.StudyTime if hasattr(dicom, "StudyTime") else "000000"
 
-        self._series_uid = dicom.SeriesInstanceUID if hasattr(dicom, "SeriesInstanceUID") else (generate_uid())
-        self._series_description = dicom.SeriesDescription if hasattr(dicom, "SeriesDescription") else "none"
+        self.series_uid = dicom.SeriesInstanceUID if hasattr(dicom, "SeriesInstanceUID") else (generate_uid())
+        self.series_description = dicom.SeriesDescription if hasattr(dicom, "SeriesDescription") else "none"
 
-        self._patient_name = str(dicom.PatientName) if hasattr(dicom, "PatientName") else "Anonym"
+        self.patient_name = str(dicom.PatientName) if hasattr(dicom, "PatientName") else "Anonym"
 
-        self._height, self._width = int(dicom.Rows), int(dicom.Columns)
-        self._depth = int(dicom.NumberOfFrames) if hasattr(dicom, "NumberOfFrames") else 0
+        self.__height, self.__width = int(dicom.Rows), int(dicom.Columns)
+        self.__depth = int(dicom.NumberOfFrames) if hasattr(dicom, "NumberOfFrames") else 0
 
-        self._origin = (
+        self.origin = (
             [float(_) for _ in dicom.ImagePositionPatient]
             if hasattr(dicom, "ImagePositionPatient")
             else [0.0, 0.0, 0.0]
         )
 
-        self._spacing_y, self._spacing_x = (
+        self.__spacing_y, self.__spacing_x = (
             [float(_) for _ in dicom.PixelSpacing] if hasattr(dicom, "PixelSpacing") else [1.0, 1.0]
         )
-        self._spacing_z = float(dicom.SliceThickness) if hasattr(dicom, "SliceThickness") else 1.0
+        self.__spacing_z = float(dicom.SliceThickness) if hasattr(dicom, "SliceThickness") else 1.0
 
         if hasattr(dicom, "ImageOrientationPatient"):
-            self._direction_x = [float(_) for _ in dicom.ImageOrientationPatient[0:3]]
-            self._direction_y = [float(_) for _ in dicom.ImageOrientationPatient[3:6]]
+            self.__direction_x = [float(_) for _ in dicom.ImageOrientationPatient[0:3]]
+            self.__direction_y = [float(_) for _ in dicom.ImageOrientationPatient[3:6]]
         else:
-            self._direction_x = [1.0, 0.0, 0.0]
-            self._direction_y = [0.0, 1.0, 0.0]
-        self._direction_z = np.cross(self._direction_x, self._direction_y).tolist()
+            self.__direction_x = [1.0, 0.0, 0.0]
+            self.__direction_y = [0.0, 1.0, 0.0]
+        self.__direction_z = np.cross(self.__direction_x, self.__direction_y).tolist()
 
-        self._modality = dicom.Modality
+        self.modality = dicom.Modality
 
-        self._channel = dicom.SamplesPerPixel
+        # 跟像素相关的数据
+        self.photometric_interpretation = dicom.PhotometricInterpretation
+        self.__samples_per_pixel = dicom.SamplesPerPixel
+        if self.photometric_interpretation == "RGB":
+            self.planar_configuration = dicom.PlanarConfiguration
 
-        self._array = self.convert_array(dicom)
+        self.array = self.convert_array(dicom)
 
         # 用于一系列 dcm 文件排序用
-        self._slice_location = float(dicom.SliceLocation) if hasattr(dicom, "SliceLocation") else None
-        self._instance_number = (
+        self.slice_location = float(dicom.SliceLocation) if hasattr(dicom, "SliceLocation") else None
+        self.instance_number = (
             int(dicom.InstanceNumber) if hasattr(dicom, "InstanceNumber") and dicom.InstanceNumber is not None else None
         )
 
     @property
-    def array(self):
-        return self._array
-
-    @property
-    def study_uid(self):
-        return self._study_uid
-
-    @property
     def study_datetime(self):
-        return self.str2datetime(self._study_date + self._study_time).strftime("%Y-%m-%d %H:%M:%S")
-
-    @property
-    def series_uid(self):
-        return self._series_uid
-
-    @property
-    def series_description(self):
-        return self._series_description
-
-    @property
-    def patient_name(self):
-        return self._patient_name
+        return self.str2datetime(self.__study_date + self.__study_time).strftime("%Y-%m-%d %H:%M:%S")
 
     @property
     def size(self):
-        return (self._width, self._height, self._depth)
-
-    @property
-    def origin(self):
-        return self._origin
+        return (self.__width, self.__height, self.__depth)
 
     @property
     def spacing(self):
-        return (self._spacing_x, self._spacing_y, self._spacing_z)
+        return (self.__spacing_x, self.__spacing_y, self.__spacing_z)
 
     @property
     def direction(self):
-        return self._direction_x + self._direction_y + self._direction_z
-
-    @property
-    def modality(self):
-        return self._modality
+        return self.__direction_x + self.__direction_y + self.__direction_z
 
     @property
     def channel(self):
-        return self._channel
-
-    @property
-    def slice_location(self):
-        return self._slice_location
-
-    @property
-    def instance_number(self):
-        return self._instance_number
+        return self.__samples_per_pixel
 
     def convert_array(self, dcm: FileDataset) -> np.ndarray:
-        if self._modality == "PT":
+        if self.modality == "PT":
             bw = dcm.PatientWeight * 1000
             ris = dcm.RadiopharmaceuticalInformationSequence[0]
             decay_time = self.seconds(

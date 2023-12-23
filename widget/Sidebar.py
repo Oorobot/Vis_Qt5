@@ -22,6 +22,7 @@ from widget.CollapsibleWidget import CollapsibleWidget
 class Sidebar(QWidget):
     displayImage2D = pyqtSignal(str, str, MedicalImage)
     displayImage3D = pyqtSignal(str, str, MedicalImage)
+    displayImageFused = pyqtSignal(str, str, MedicalImage, MedicalImage)
 
     def __init__(self, parent: QWidget = None) -> None:
         # 初始化
@@ -188,9 +189,27 @@ class Sidebar(QWidget):
                 return
 
     def displayFusionButtonClicked(self):
-        print("displayFusionButtonClicked...")
-        messageBox = QMessageBox(QMessageBox.Icon.Information, "提示", "该功能仅支持PET/CT融合成像。", QMessageBox.StandardButton.Ok)
-        messageBox.exec()
+        images, title = [], None
+        for uid in self.checkedChildren:
+            widget_uid, child_uid = uid.split("_^_")
+            widget = self.collapsibleWidgets[widget_uid]
+            child = widget.children[child_uid]
+            images.append(child.image)
+            title = widget.collapsibleButton.text().split(" ")[0] + " - " + child.radioButton.text().split(" ")[0]
+        if len(images) == 2 and (
+            ("PT" == images[0].modality and "CT" == images[1].modality)
+            or ("PT" == images[1].modality and "CT" == images[0].modality)
+        ):
+            if images[0].modality == "PT":
+                imagePT, imageCT = images[0], images[1]
+            else:
+                imagePT, imageCT = images[1], images[0]
+            self.displayImageFused.emit(uid + "Fused", title, imageCT, imagePT)
+        else:
+            messageBox = QMessageBox(
+                QMessageBox.Icon.Information, "提示", "该功能仅支持PET/CT融合成像。", QMessageBox.StandardButton.Ok
+            )
+            messageBox.exec()
 
 
 if __name__ == "__main__":

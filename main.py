@@ -44,6 +44,7 @@ class Main(QMainWindow):
         # 信号与槽
         self.sidebar.displayImage2D.connect(self.addTab)
         self.sidebar.displayImage3D.connect(self.addTab)
+        self.sidebar.displayImageFused.connect(self.addTab)
         self.hideButton.clicked.connect(self.hideButtonClicked)
 
         # 样式
@@ -66,6 +67,9 @@ class Main(QMainWindow):
                 vtkViewer.addVolume(image)
                 index = self.tabWidget.addTab(vtkViewer, title)
                 self.tabWidget.setCurrentIndex(index)
+            if uid.endswith("Fused"):
+                print("Fused")
+                return
 
             # 关闭按钮
             tabCloseButton = QToolButton()
