@@ -19,6 +19,7 @@ def get_colors(num):
 def float_01_to_uint8_0255(array: np.ndarray):
     assert 0 <= array.min() and array.max() <= 1
     if array.shape[-1] == 4:
+        # RGBA -> RGB
         return np.clip((array[..., 0:3] * 255).round(), 0, 255).astype(np.uint8)
     else:
         return np.clip((array * 255).round(), 0, 255).astype(np.uint8)

@@ -1,17 +1,11 @@
+from typing import Union
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import (
-    QApplication,
-    QBoxLayout,
-    QHBoxLayout,
-    QMainWindow,
-    QTabBar,
-    QTabWidget,
-    QToolButton,
-    QWidget,
-)
+from PyQt6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QTabBar, QTabWidget, QToolButton, QWidget
 
 from utility.MedicalImage import MedicalImage
+from utility.MedicalImage2 import MedicalImage2
 from widget.ImageViewer import ImageViewer
 from widget.Sidebar import Sidebar
 from widget.VTKWidget import VTKWidget
@@ -51,7 +45,7 @@ class Main(QMainWindow):
         self.resize(1920, 1080)
         self.show()
 
-    def addTab(self, uid: str, title: str, image: MedicalImage):
+    def addTab(self, uid: str, title: str, image: Union[MedicalImage, MedicalImage2]):
         if uid in self.tabs:
             self.tabWidget.setCurrentIndex(self.tabs.index(uid))
         else:
@@ -68,8 +62,12 @@ class Main(QMainWindow):
                 index = self.tabWidget.addTab(vtkViewer, title)
                 self.tabWidget.setCurrentIndex(index)
             if uid.endswith("Fused"):
-                print("Fused")
-                return
+                viewer = ImageViewer(bimodal=True)
+                index = self.tabWidget.addTab(viewer, title)
+                self.tabWidget.setCurrentIndex(index)
+                # 重置图像大小
+                viewer.setImage(image)
+                viewer.view.reset()
 
             # 关闭按钮
             tabCloseButton = QToolButton()

@@ -2,27 +2,18 @@ from typing import Dict, List
 
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import (
-    QFileDialog,
-    QHBoxLayout,
-    QMessageBox,
-    QScrollArea,
-    QSizePolicy,
-    QSpacerItem,
-    QToolButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtWidgets import QFileDialog, QHBoxLayout, QMessageBox, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
 from utility.io import ReadImage
 from utility.MedicalImage import MedicalImage
+from utility.MedicalImage2 import MedicalImage2
 from widget.CollapsibleWidget import CollapsibleWidget
 
 
 class Sidebar(QWidget):
     displayImage2D = pyqtSignal(str, str, MedicalImage)
     displayImage3D = pyqtSignal(str, str, MedicalImage)
-    displayImageFused = pyqtSignal(str, str, MedicalImage, MedicalImage)
+    displayImageFused = pyqtSignal(str, str, MedicalImage2)
 
     def __init__(self, parent: QWidget = None) -> None:
         # 初始化
@@ -204,7 +195,7 @@ class Sidebar(QWidget):
                 imagePT, imageCT = images[0], images[1]
             else:
                 imagePT, imageCT = images[1], images[0]
-            self.displayImageFused.emit(uid + "Fused", title, imageCT, imagePT)
+            self.displayImageFused.emit(uid + "Fused", title, MedicalImage2(imageCT, imagePT))
         else:
             messageBox = QMessageBox(
                 QMessageBox.Icon.Information, "提示", "该功能仅支持PET/CT融合成像。", QMessageBox.StandardButton.Ok

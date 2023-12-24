@@ -1,18 +1,13 @@
 from typing import Union
 
 import numpy as np
-from matplotlib.colors import Colormap
 from PyQt6.QtCore import QRectF
 from PyQt6.QtGui import QImage, QPainter, QPixmap
 from PyQt6.QtWidgets import QGraphicsPixmapItem, QStyleOptionGraphicsItem, QWidget
 
-from utility.common import float_01_to_uint8_0255
-
 
 class ImageItem(QGraphicsPixmapItem):
-    def __init__(self, array: np.ndarray, colorMap: Colormap = None) -> None:
-        if colorMap is not None:
-            array = float_01_to_uint8_0255(colorMap(array))
+    def __init__(self, array: np.ndarray) -> None:
         # 初始化
         image = QImage(
             array.data.tobytes(),

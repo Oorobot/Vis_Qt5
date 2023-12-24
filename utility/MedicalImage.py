@@ -2,6 +2,9 @@ from typing import List, Tuple
 
 import numpy as np
 import SimpleITK as sitk
+from matplotlib.cm import get_cmap
+
+from utility.common import float_01_to_uint8_0255
 
 
 class MedicalImage:
@@ -10,12 +13,14 @@ class MedicalImage:
         array: np.ndarray,
         size: Tuple[int, int, int],  # X, Y, Z
         spacing: Tuple[int, int, int],  # X, Y, Z
-        origin: Tuple[int, int, int],  # Xx Xy Xz, Yx Yy Yz, Zx Zy Zz
-        direction: List[int],
+        origin: Tuple[int, int, int],  # X, Y, Z
+        direction: List[int],  # Xx Xy Xz, Yx Yy Yz, Zx Zy Zz
         modality: str,  # PT, CT, NM, OT
         channel: int = None,
+        files: List[str] = None,
     ):
         self.array = array
+        self.files = files
         self.size = size
         self.origin = origin
         self.spacing = spacing
@@ -31,6 +36,17 @@ class MedicalImage:
         self.array_norm = None
         self.normlize()
 
+        # 映射颜色图
+        if self.modality == "CT":
+            self.cmap = get_cmap("gray")
+        elif self.modality == "PT" or self.modality == "NM":
+            self.cmap = get_cmap("binary")
+        else:
+            if self.channel == 1:
+                self.cmap = get_cmap("gray")
+            else:
+                self.cmap = None
+
     def normlize(self, amin: float = None, amax: float = None):
         if self.channel == 1:
             if amin is None:
@@ -43,11 +59,11 @@ class MedicalImage:
             _array = self.array
         self.array_norm = _array.astype(np.uint8)
 
-    def plane(self, view: str, pos: int):
+    def plane_origin(self, view: str, pos: int):
         """
         get the origin plane of Medical Image
         :param view: Sagittal, Coronal, Transverse
-        :param pos: the position
+        :param pos: the position, range: [1, size]
         """
         if view == "s":
             return self.array[:, :, pos - 1, ...]
@@ -58,24 +74,28 @@ class MedicalImage:
         else:
             raise Exception(f"not support view = {view}.")
 
-    def plane_norm(self, view: str, pos: int):
+    def plane(self, view: str, pos: int, cmap: str = None):
         """
         get the normalized plane of Medical Image
         :param view: Sagittal, Coronal, Transverse
         :param pos: the position, range: [1, size]
         """
+        _array: np.ndarray = None
         if view == "s":
-            return self.array_norm[:, :, pos - 1, ...]
+            _array = self.array_norm[:, :, pos - 1, ...]
         elif view == "c":
-            return self.array_norm[:, pos - 1, ...]
+            _array = self.array_norm[:, pos - 1, ...]
         elif view == "t":
-            return self.array_norm[pos - 1, ...]
+            _array = self.array_norm[pos - 1, ...]
         else:
             raise Exception(f"not support view = {view}.")
 
+        if cmap is not None:
+            self.cmap = get_cmap(cmap)
+        if self.cmap is not None:
+            return float_01_to_uint8_0255(self.cmap(_array))
+        else:
+            return _array
+
     def to_sitk_image(self) -> sitk.Image:
-        sitkImage = sitk.GetImageFromArray(self.array)
-        sitkImage.SetOrigin(self.origin)
-        sitkImage.SetSpacing(self.spacing)
-        sitkImage.SetDirection(self.direction)
-        return sitkImage
+        return sitk.ReadImage(self.files)

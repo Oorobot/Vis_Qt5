@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 import numpy as np
@@ -8,6 +9,7 @@ from pydicom.uid import generate_uid
 class MedicalSlice(object):
     def __init__(self, file: str) -> None:
         dicom = dcmread(file)
+        self.path = os.path.abspath(file)
 
         self.study_uid = dicom.StudyInstanceUID if hasattr(dicom, "StudyInstanceUID") else (generate_uid())
         self.__study_date = dicom.StudyDate if hasattr(dicom, "StudyDate") else "00000000"

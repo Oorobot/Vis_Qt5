@@ -19,6 +19,7 @@ def ReadNIFTI(file: str, only_image=False) -> dict:
         image.GetOrigin(),
         image.GetDirection(),
         "OT",
+        [os.path.abspath(file)],
     )
     if only_image:
         return medical_image
@@ -100,6 +101,7 @@ def ReadDICOM(file: str) -> dict:
                 # volume -> Medical Image
                 w, h, _d = size_slices[0].size
                 d = len(size_slices) if _d == 0 else _d
+                files = [s.path for s in size_slices]
                 medical_image = MedicalImage(
                     volume,
                     (w, h, d),
@@ -108,6 +110,7 @@ def ReadDICOM(file: str) -> dict:
                     size_slices[0].direction,
                     size_slices[0].modality,
                     size_slices[0].channel,
+                    files,
                 )
                 # replace size_uid and mediacl_image
                 series_slices.pop(size_uid)
