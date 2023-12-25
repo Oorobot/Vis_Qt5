@@ -75,6 +75,7 @@ class ImageViewer(QMainWindow):
         toolbar.addWidget(viewButton)
 
         # 操作：重置、翻转
+        operateReset = toolbar.addAction(QIcon("resource/reset.png"), "重置")
         operateButton = QToolButton()
         operateButton.setText("操作")
         operateButton.setIcon(QIcon("resource/operate.png"))
@@ -82,9 +83,10 @@ class ImageViewer(QMainWindow):
         operateButton.setAutoRaise(True)
         operateButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         operateMenu = QMenu()
-        operateReset = operateMenu.addAction(QIcon("resource/reset.png"), "复原")
-        operateFlipH = operateMenu.addAction(QIcon("resource/flipH.png"), "水平")
-        operateFlipV = operateMenu.addAction(QIcon("resource/flipV.png"), "垂直")
+        operateMirror1 = operateMenu.addAction(QIcon("resource/mirror1.png"), "水平镜像")
+        operateMirror2 = operateMenu.addAction(QIcon("resource/mirror2.png"), "垂直镜像")
+        operateRotate1 = operateMenu.addAction(QIcon("resource/rotate1.png"), "顺时针旋转")
+        operateRotate2 = operateMenu.addAction(QIcon("resource/rotate2.png"), "逆时针旋转")
         operateButton.setMenu(operateMenu)
         toolbar.addWidget(operateButton)
 
@@ -142,7 +144,7 @@ class ImageViewer(QMainWindow):
             toolbar.addSeparator()
 
             # 信号与槽
-            self.constrastSlider.valueChanged.connect(self.adjustConstrast2)
+            self.constrastSlider.sliderReleased.connect(self.adjustConstrast2)
             self.constrastMax.textEdited.connect(self.validateConstrastMax2)
             self.constrastMax.editingFinished.connect(self.adjustConstrastMax2)
 
@@ -172,9 +174,11 @@ class ImageViewer(QMainWindow):
         viewC.triggered.connect(lambda: self.setView("c"))
         viewT.triggered.connect(lambda: self.setView("t"))
 
-        operateReset.triggered.connect(self.activateReset)
-        operateFlipH.triggered.connect(self.flipHorizontal)
-        operateFlipV.triggered.connect(self.flipVertical)
+        operateReset.triggered.connect(self.view.reset)
+        operateMirror1.triggered.connect(self.view.mirror1)
+        operateMirror2.triggered.connect(self.view.mirror2)
+        operateRotate1.triggered.connect(self.view.rotate1)
+        operateRotate2.triggered.connect(self.view.rotate2)
 
         mouseLeftNormal.triggered.connect(self.deactivateDragMode)
         mouseLeftDrag.triggered.connect(self.activateDragMode)
@@ -240,9 +244,9 @@ class ImageViewer(QMainWindow):
             self.view.image.normlize(mi, ma)
             self.view.setCurrentPlane()
 
-    def adjustConstrast2(self, ma):
+    def adjustConstrast2(self):
         if self.view.image is not None:
-            self.view.image.normlize(0, ma * 0.1, "PT")
+            self.view.image.normlize_pt(self.constrastSlider.value() * 0.1)
             self.view.setCurrentPlane()
 
     def validateConstrastMax2(self, t: str):

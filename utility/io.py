@@ -19,7 +19,7 @@ def ReadNIFTI(file: str, only_image=False) -> dict:
         image.GetOrigin(),
         image.GetDirection(),
         "OT",
-        [os.path.abspath(file)],
+        files=[os.path.abspath(file)],
     )
     if only_image:
         return medical_image

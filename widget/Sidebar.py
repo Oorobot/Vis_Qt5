@@ -195,7 +195,9 @@ class Sidebar(QWidget):
                 imagePT, imageCT = images[0], images[1]
             else:
                 imagePT, imageCT = images[1], images[0]
-            self.displayImageFused.emit(uid + "Fused", title, MedicalImage2(imageCT, imagePT))
+            image = MedicalImage2(imageCT, imagePT)
+            self.displayImageFused.emit(uid + "2DFused", title, image)
+            self.displayImageFused.emit(uid + "3DFused", title, image)
         else:
             messageBox = QMessageBox(
                 QMessageBox.Icon.Information, "提示", "该功能仅支持PET/CT融合成像。", QMessageBox.StandardButton.Ok

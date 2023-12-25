@@ -1,5 +1,6 @@
 import json
 import math
+from typing import Union
 
 import vtkmodules.vtkInteractionStyle
 import vtkmodules.vtkRenderingAnnotation
@@ -17,6 +18,7 @@ from utility.common import get_colors
 from utility.constant import LABEL_TO_NAME
 from utility.io import ReadNIFTI
 from utility.MedicalImage import MedicalImage
+from utility.MedicalImage2 import MedicalImage2
 from utility.vtktool import BoundingBox, labelToPoints, volumeCT, volumePT
 
 
@@ -65,7 +67,7 @@ class VTKWidget(QMainWindow):
         widget.Start()
         self.show()
 
-    def addVolume(self, image: MedicalImage):
+    def addVolume(self, image: Union[MedicalImage, MedicalImage2]):
         if image.modality == "CT":
             self.initByImage(image)
             self.ren.AddVolume(volumeCT(image.array, self.origin, self.spacing))
@@ -73,6 +75,11 @@ class VTKWidget(QMainWindow):
         elif image.modality == "PT":
             self.initByImage(image)
             self.ren.AddVolume(volumePT(image.array, self.origin, self.spacing))
+            self.adjustCamera()
+        elif image.modality == "PTCT":
+            self.initByImage(image)
+            self.ren.AddVolume(volumeCT(image.array, self.origin, self.spacing))
+            self.ren.AddVolume(volumePT(image.array_pt, self.origin, self.spacing))
             self.adjustCamera()
         else:
             raise Exception(f"[ERROR] not support the image's modality = {image.modality}.")
@@ -91,7 +98,7 @@ class VTKWidget(QMainWindow):
         # camera.Azimuth(30.0)  # 表示 camera 的视点位置沿顺时针旋转 30 度角
         # camera.Elevation(30.0)  # 表示 camera 的视点位置沿向上的方面旋转 30 度角
 
-    def initByImage(self, image: MedicalImage):
+    def initByImage(self, image: Union[MedicalImage, MedicalImage2]):
         self.image = image
         self.spacing = self.image.spacing
         # 自定义 origin 使中心位于 (0, 0, 0)

@@ -178,14 +178,14 @@ class GraphicsView(QGraphicsView):
         if self.label is not None:
             self.setLabelItem(self.label.plane_origin(self.view, self.position))
 
-    # 水平镜像
-    def horizontalFlip(self):
-        horizontalFlip = QTransform()
-        horizontalFlip.scale(-1, 1)
-        self.setTransform(self.transform() * horizontalFlip)
+    def mirror1(self):  # 水平镜像
+        self.setTransform(self.transform().scale(-1, 1))
 
-    # 垂直镜像
-    def verticalFlip(self):
-        verticalFlip = QTransform()
-        verticalFlip.scale(1, -1)
-        self.setTransform(self.transform() * verticalFlip)
+    def mirror2(self):  # 垂直镜像
+        self.setTransform(self.transform().scale(1, -1))
+
+    def rotate1(self):  # 顺时针90°
+        self.setTransform(self.transform().rotate(90))
+
+    def rotate2(self):  # 逆时针90°
+        self.setTransform(self.transform().rotate(-90))

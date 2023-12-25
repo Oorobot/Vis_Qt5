@@ -18,6 +18,7 @@ class MedicalImage2:
         self.spacing = _ct.GetSpacing()
         self.direction = _ct.GetDirection()
 
+        self.modality = "PTCT"
         self.channel = ct.channel
         self.cmap = ct.cmap
         self.cmap_pt = get_cmap("hot")
@@ -29,29 +30,23 @@ class MedicalImage2:
         self.array_pt = sitk.GetArrayFromImage(_pt_array)
 
         self.array_norm = None
-        self.normlize(which="CT")
         self.array_norm_pt = None
-        self.normlize(0, 2.5, which="PT")
+        self.normlize()
+        self.normlize_pt(5.0)
 
-    def normlize(self, amin: float = None, amax: float = None, which: str = "CT"):
-        if which == "CT":
-            _array = self.array
-        else:
-            _array = self.array_pt
-
+    def normlize(self, amin: float = None, amax: float = None):
         if amin is None:
-            amin = _array.min()
+            amin = self.array.min()
         if amax is None:
-            amax = _array.max()
+            amax = self.array.max()
+        _array = (self.array - amin) / (amax - amin)
+        self.array_norm = float_01_to_uint8_0255(_array)
 
-        _array = 1.0 * (_array - amin) / (amax - amin)
-        _array = np.clip((_array * 255).round(), 0, 255)
-        _array = _array.astype(np.uint8)
-
-        if which == "CT":
-            self.array_norm = _array
-        else:
-            self.array_norm_pt = _array
+    def normlize_pt(self, amax: float = None):
+        if amax is None:
+            amax = self.array_pt.max()
+        _array = self.array_pt / amax
+        self.array_norm_pt = float_01_to_uint8_0255(_array)
 
     def plane_ct(self, view: str, pos: int):
         _array: np.ndarray = None
@@ -88,7 +83,6 @@ class MedicalImage2:
 
         plane_ct = float_01_to_uint8_0255(self.cmap(plane_ct))
         plane_pt = float_01_to_uint8_0255(self.cmap_pt(plane_pt))
-
         return cv2.addWeighted(plane_ct, 0.3, plane_pt, 0.7, 0)
 
 

@@ -24,7 +24,7 @@ def volumeCT(array: np.ndarray, origin: tuple, spacing: tuple, bodyArray: np.nda
 
     # 创建 vtk 图像
     vtkImage = vtkImageImportFromArray()
-    vtkImage.SetArray(array.astype(np.int16))
+    vtkImage.SetArray(array.astype(np.float64))
     vtkImage.SetDataOrigin(origin)
     vtkImage.SetDataSpacing(spacing)
     vtkImage.Update()
@@ -82,7 +82,7 @@ def volumePT(
         array = array * bodyArray + array * (1 - bodyArray)
 
     vtkImage = vtkImageImportFromArray()
-    vtkImage.SetArray(array)
+    vtkImage.SetArray(array.astype(np.float64))
     vtkImage.SetDataOrigin(origin)
     vtkImage.SetDataSpacing(spacing)
     vtkImage.Update()
@@ -97,14 +97,15 @@ def volumePT(
     [color.AddRGBPoint(_x, *rgba[:3]) for _x, rgba in zip(x, cmap)]
 
     scalarOpacity = vtkPiecewiseFunction()
-    scalarOpacity.AddPoint(0.10 * ma, 0.00)
-    scalarOpacity.AddPoint(0.30 * ma, 0.25)
-    scalarOpacity.AddPoint(0.80 * ma, 0.65)
-    scalarOpacity.AddPoint(0.95 * ma, 0.80)
+    scalarOpacity.AddPoint(0, 0.00)
+    scalarOpacity.AddPoint(1.0, 0.25)
+    scalarOpacity.AddPoint(2.5, 0.45)
+    scalarOpacity.AddPoint(0.60 * ma, 0.80)
+    scalarOpacity.AddPoint(0.90 * ma, 0.95)
 
     gradientOpacity = vtkPiecewiseFunction()
     gradientOpacity.AddPoint(0, 0.00)
-    gradientOpacity.AddPoint(0.6 * ma, 0.5)
+    gradientOpacity.AddPoint(0.6 * ma, 0.4)
     gradientOpacity.AddPoint(0.9 * ma, 1.0)
 
     property = vtkVolumeProperty()

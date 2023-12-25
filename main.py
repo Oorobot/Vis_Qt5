@@ -61,13 +61,20 @@ class Main(QMainWindow):
                 vtkViewer.addVolume(image)
                 index = self.tabWidget.addTab(vtkViewer, title)
                 self.tabWidget.setCurrentIndex(index)
-            if uid.endswith("Fused"):
+            if uid.endswith("2DFused"):
+                # 2D
                 viewer = ImageViewer(bimodal=True)
                 index = self.tabWidget.addTab(viewer, title)
                 self.tabWidget.setCurrentIndex(index)
                 # 重置图像大小
                 viewer.setImage(image)
                 viewer.view.reset()
+            if uid.endswith("3DFused"):
+                # 3D
+                vtkViewer = VTKWidget()
+                vtkViewer.addVolume(image)
+                index = self.tabWidget.addTab(vtkViewer, title)
+                self.tabWidget.setCurrentIndex(index)
 
             # 关闭按钮
             tabCloseButton = QToolButton()
