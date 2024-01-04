@@ -3,7 +3,7 @@ import numpy as np
 import SimpleITK as sitk
 from matplotlib.cm import get_cmap
 
-from utility.common import float_01_to_uint8_0255
+from utility.common import float_01_to_uint8_0255, get_body_mask
 from utility.MedicalImage import MedicalImage
 
 
@@ -33,6 +33,8 @@ class MedicalImage2:
         self.array_norm_pt = None
         self.normlize()
         self.normlize_pt(5.0)
+
+        self.body_mask = sitk.GetArrayFromImage(get_body_mask(_ct, _pt_array))
 
     def normlize(self, amin: float = None, amax: float = None):
         if amin is None:

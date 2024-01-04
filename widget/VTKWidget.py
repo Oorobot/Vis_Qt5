@@ -78,8 +78,8 @@ class VTKWidget(QMainWindow):
             self.adjustCamera()
         elif image.modality == "PTCT":
             self.initByImage(image)
-            self.ren.AddVolume(volumeCT(image.array, self.origin, self.spacing))
-            self.ren.AddVolume(volumePT(image.array_pt, self.origin, self.spacing))
+            self.ren.AddVolume(volumeCT(image.array, self.origin, self.spacing, image.body_mask))
+            self.ren.AddVolume(volumePT(image.array_pt, self.origin, self.spacing, image.body_mask))
             self.adjustCamera()
         else:
             raise Exception(f"[ERROR] not support the image's modality = {image.modality}.")
@@ -182,8 +182,9 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     widget = VTKWidget()
-    # image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
-    # image.modality = "CT"
+    image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
+    image.modality = "CT"
+    widget.addVolume(image)
     image = ReadNIFTI(r"DATA\001_SUVbw.nii.gz", True)
     image.modality = "PT"
     widget.addVolume(image)
