@@ -32,7 +32,7 @@ class Sidebar(QWidget):
         layout.addWidget(self.widgetMain)
         # 主按钮
         openButton = QToolButton(self)
-        openButton.setIcon(QIcon("resource/open.png"))
+        openButton.setIcon(QIcon("asset/icon/open.png"))
         openButton.setIconSize(QSize(30, 30))
         openButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         openButton.setToolTip("打开文件")
@@ -44,7 +44,7 @@ class Sidebar(QWidget):
             "#openButton:pressed{background-color:rgba(174,238,238,0.4);}"
         )
         display2DButton = QToolButton(self)
-        display2DButton.setIcon(QIcon("resource/display2d.png"))
+        display2DButton.setIcon(QIcon("asset/icon/display2d.png"))
         display2DButton.setIconSize(QSize(30, 30))
         display2DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         display2DButton.setToolTip("2D浏览")
@@ -56,7 +56,7 @@ class Sidebar(QWidget):
             "#display2DButton:pressed{background-color:rgba(174,238,238,0.4);}"
         )
         display3DButton = QToolButton(self)
-        display3DButton.setIcon(QIcon("resource/display3d.png"))
+        display3DButton.setIcon(QIcon("asset/icon/display3d.png"))
         display3DButton.setIconSize(QSize(30, 30))
         display3DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         display3DButton.setToolTip("3D浏览")
@@ -68,7 +68,7 @@ class Sidebar(QWidget):
             "#display3DButton:pressed{background-color:rgba(174,238,238,0.4);}"
         )
         displayFusionButton = QToolButton(self)
-        displayFusionButton.setIcon(QIcon("resource/displayFusion.png"))
+        displayFusionButton.setIcon(QIcon("asset/icon/displayFusion.png"))
         displayFusionButton.setIconSize(QSize(30, 30))
         displayFusionButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         displayFusionButton.setToolTip("融合浏览")

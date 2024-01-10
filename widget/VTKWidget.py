@@ -37,7 +37,7 @@ class VTKWidget(QMainWindow):
 
         labelButton = QToolButton()
         labelButton.setText("标签")
-        labelButton.setIcon(QIcon("resource/label.png"))
+        labelButton.setIcon(QIcon("asset/icon/label.png"))
         labelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
         labelSlider = QSlider(Qt.Orientation.Horizontal)

@@ -63,56 +63,56 @@ class ImageViewer(QMainWindow):
         # 三视图
         viewButton = QToolButton()
         viewButton.setText("视图")
-        viewButton.setIcon(QIcon("resource/view.png"))
+        viewButton.setIcon(QIcon("asset/icon/view.png"))
         viewButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         viewButton.setAutoRaise(True)
         viewButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         viewMenu = QMenu()
-        viewS = viewMenu.addAction(QIcon("resource/S.png"), "矢状面")
-        viewC = viewMenu.addAction(QIcon("resource/C.png"), "冠状面")
-        viewT = viewMenu.addAction(QIcon("resource/T.png"), "横截面")
+        viewS = viewMenu.addAction(QIcon("asset/icon/S.png"), "矢状面")
+        viewC = viewMenu.addAction(QIcon("asset/icon/C.png"), "冠状面")
+        viewT = viewMenu.addAction(QIcon("asset/icon/T.png"), "横截面")
         viewButton.setMenu(viewMenu)
         toolbar.addWidget(viewButton)
 
         # 操作：重置、翻转
-        operateReset = toolbar.addAction(QIcon("resource/reset.png"), "重置")
+        operateReset = toolbar.addAction(QIcon("asset/icon/reset.png"), "重置")
         operateButton = QToolButton()
         operateButton.setText("操作")
-        operateButton.setIcon(QIcon("resource/operate.png"))
+        operateButton.setIcon(QIcon("asset/icon/operate.png"))
         operateButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         operateButton.setAutoRaise(True)
         operateButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         operateMenu = QMenu()
-        operateMirror1 = operateMenu.addAction(QIcon("resource/mirror1.png"), "水平镜像")
-        operateMirror2 = operateMenu.addAction(QIcon("resource/mirror2.png"), "垂直镜像")
-        operateRotate1 = operateMenu.addAction(QIcon("resource/rotate1.png"), "顺时针旋转")
-        operateRotate2 = operateMenu.addAction(QIcon("resource/rotate2.png"), "逆时针旋转")
+        operateMirror1 = operateMenu.addAction(QIcon("asset/icon/mirror1.png"), "水平镜像")
+        operateMirror2 = operateMenu.addAction(QIcon("asset/icon/mirror2.png"), "垂直镜像")
+        operateRotate1 = operateMenu.addAction(QIcon("asset/icon/rotate1.png"), "顺时针旋转")
+        operateRotate2 = operateMenu.addAction(QIcon("asset/icon/rotate2.png"), "逆时针旋转")
         operateButton.setMenu(operateMenu)
         toolbar.addWidget(operateButton)
 
         # 鼠标左键
         self.mouseLeftButton = QToolButton()
         self.mouseLeftButton.setText("普通")
-        self.mouseLeftButton.setIcon(QIcon("resource/arrow.png"))
+        self.mouseLeftButton.setIcon(QIcon("asset/icon/arrow.png"))
         self.mouseLeftButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.mouseLeftButton.setAutoRaise(True)
         self.mouseLeftButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         mouseLeftMenu = QMenu()
-        mouseLeftNormal = mouseLeftMenu.addAction(QIcon("resource/arrow.png"), "普通")
-        mouseLeftDrag = mouseLeftMenu.addAction(QIcon("resource/drag.png"), "拖动")
+        mouseLeftNormal = mouseLeftMenu.addAction(QIcon("asset/icon/arrow.png"), "普通")
+        mouseLeftDrag = mouseLeftMenu.addAction(QIcon("asset/icon/drag.png"), "拖动")
         self.mouseLeftButton.setMenu(mouseLeftMenu)
         toolbar.addWidget(self.mouseLeftButton)
 
         # 鼠标滑轮
         self.wheelButton = QToolButton()
         self.wheelButton.setText("切换")
-        self.wheelButton.setIcon(QIcon("resource/slide.png"))
+        self.wheelButton.setIcon(QIcon("asset/icon/slide.png"))
         self.wheelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.wheelButton.setAutoRaise(True)
         self.wheelButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         wheelMenu = QMenu()
-        wheelSlide = wheelMenu.addAction(QIcon("resource/slide.png"), "切换")
-        wheelResize = wheelMenu.addAction(QIcon("resource/resize.png"), "缩放")
+        wheelSlide = wheelMenu.addAction(QIcon("asset/icon/slide.png"), "切换")
+        wheelResize = wheelMenu.addAction(QIcon("asset/icon/resize.png"), "缩放")
         self.wheelButton.setMenu(wheelMenu)
         toolbar.addWidget(self.wheelButton)
         toolbar.addSeparator()
@@ -120,7 +120,7 @@ class ImageViewer(QMainWindow):
         # 对比度
         constrastButton = QToolButton()
         constrastButton.setText("对比度")
-        constrastButton.setIcon(QIcon("resource/constrast.png"))
+        constrastButton.setIcon(QIcon("asset/icon/constrast.png"))
         constrastButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.constrastWindow = ConstrastWindow()
         toolbar.addWidget(constrastButton)
@@ -151,7 +151,7 @@ class ImageViewer(QMainWindow):
         # 标签、透明度
         labelButton = QToolButton()
         labelButton.setText("标签")
-        labelButton.setIcon(QIcon("resource/label.png"))
+        labelButton.setIcon(QIcon("asset/icon/label.png"))
         labelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         labelSlider = QSlider(Qt.Orientation.Horizontal)
         labelSlider.setRange(0, 100)
@@ -212,25 +212,25 @@ class ImageViewer(QMainWindow):
     # 拖动
     def activateDragMode(self):
         self.mouseLeftButton.setText("拖动")
-        self.mouseLeftButton.setIcon(QIcon("resource/drag.png"))
+        self.mouseLeftButton.setIcon(QIcon("asset/icon/drag.png"))
         self.view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
     # 取消拖动
     def deactivateDragMode(self):
         self.mouseLeftButton.setText("普通")
-        self.mouseLeftButton.setIcon(QIcon("resource/arrow.png"))
+        self.mouseLeftButton.setIcon(QIcon("asset/icon/arrow.png"))
         self.view.setDragMode(QGraphicsView.DragMode.NoDrag)
 
     # 缩放
     def activateResizeMode(self):
         self.wheelButton.setText("缩放")
-        self.wheelButton.setIcon(QIcon("resource/resize.png"))
+        self.wheelButton.setIcon(QIcon("asset/icon/resize.png"))
         self.view.resizeOrSlide = True
 
     # 切换
     def activateSlideMode(self):
         self.wheelButton.setText("切换")
-        self.wheelButton.setIcon(QIcon("resource/slide.png"))
+        self.wheelButton.setIcon(QIcon("asset/icon/slide.png"))
         self.view.resizeOrSlide = False
 
     # 对比度

@@ -88,8 +88,8 @@ def get_body_mask(hu_image: sitk.Image, suv_image: sitk.Image):
 
     mask_body = sitk.And(hu_binary_closing_max, suv_binary_closing_max)
     # 取最大连通量
-    mask_body_max = get_max_component(mask_body)
+    # mask_body_max = get_max_component(mask_body)
 
     # 使用超大半径的闭操作，消除伪影
-    mask_body_max_closing = binary_morphological_closing(mask_body_max, 20)
-    return mask_body_max_closing
+    mask_body_closing = binary_morphological_closing(mask_body, 20)
+    return mask_body_closing

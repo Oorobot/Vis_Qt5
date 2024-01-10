@@ -52,7 +52,7 @@ class CollapsibleChild(QWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showCustomContextMenu)
         self.contextMenu = QMenu()
-        deleteAction = QAction(QIcon("resource/delete.png"), "删除", self.contextMenu)
+        deleteAction = QAction(QIcon("asset/icon/delete.png"), "删除", self.contextMenu)
         self.contextMenu.addAction(deleteAction)
 
         deleteAction.triggered.connect(self.deleteActionTriggered)
@@ -88,7 +88,7 @@ class CollapsibleWidget(QWidget):
 
         # 可折叠按钮
         self.collapsibleButton = QToolButton(self)
-        self.collapsibleButton.setIcon(QIcon("resource/expand.png"))
+        self.collapsibleButton.setIcon(QIcon("asset/icon/expand.png"))
         self.collapsibleButton.setText(description)
         layout.addWidget(self.collapsibleButton)
 
@@ -145,12 +145,12 @@ class CollapsibleWidget(QWidget):
 
     def collapsibleButtonClicked(self) -> None:
         if self.collapsible:
-            self.collapsibleButton.setIcon(QIcon("resource/collapse.png"))
+            self.collapsibleButton.setIcon(QIcon("asset/icon/collapse.png"))
             self.setFixedHeight(40)
             for child in self.children.values():
                 child.radioButton.setChecked(False)
         else:
-            self.collapsibleButton.setIcon(QIcon("resource/expand.png"))
+            self.collapsibleButton.setIcon(QIcon("asset/icon/expand.png"))
             self.setFixedHeight(40 + (len(self.children) * 30))
         self.collapsible = not self.collapsible
         for child in self.children.values():

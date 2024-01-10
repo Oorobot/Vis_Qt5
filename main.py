@@ -78,7 +78,7 @@ class Main(QMainWindow):
 
             # 关闭按钮
             tabCloseButton = QToolButton()
-            tabCloseButton.setIcon(QIcon("resource/close.png"))
+            tabCloseButton.setIcon(QIcon("asset/icon/close.png"))
             tabCloseButton.setStyleSheet("background-color:transparent")
             tabCloseButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             tabCloseButton.clicked.connect(lambda: self.removeTab(self.tabs.index(uid)))
