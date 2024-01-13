@@ -7,10 +7,10 @@ from PyQt6.QtWidgets import QFileDialog, QHBoxLayout, QMessageBox, QScrollArea, 
 from utility.io import ReadImage
 from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
-from widget.CollapsibleWidget import CollapsibleWidget
+from widget import CollapsibleWidget
 
 
-class Sidebar(QWidget):
+class CollapsibleSidebar(QWidget):
     displayImage2D = pyqtSignal(str, str, MedicalImage)
     displayImage3D = pyqtSignal(str, str, MedicalImage)
     displayImageFused = pyqtSignal(str, str, MedicalImage2)
@@ -211,6 +211,6 @@ if __name__ == "__main__":
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-    MainWindow = Sidebar()
+    MainWindow = CollapsibleSidebar()
     MainWindow.show()
     sys.exit(app.exec())

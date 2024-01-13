@@ -189,12 +189,14 @@ def BoundingBox(
     # 文本
     textActor = vtkTextActor3D()
     textActor.SetInput(text)
-    textActor.SetPosition(x2, y2, z2)
+    textActor.SetPosition(x2, y1, z2)
+    textActor.RotateX(90)
+    textActor.AddPosition(0, -1000, 0)
     textProperty = textActor.GetTextProperty()
     textProperty.SetColor(*color)
     textProperty.SetFontSize(28)
     textProperty.SetOpacity(opacity)
-
+    textProperty.SetJustificationToCentered()
     return cubeActor, textActor
 
 

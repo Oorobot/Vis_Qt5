@@ -7,10 +7,10 @@ from PyQt6.QtWidgets import QGraphicsPixmapItem, QStyleOptionGraphicsItem, QWidg
 from utility.common import get_colors
 
 
-class LabelItem(QGraphicsPixmapItem):
+class ImageItem2(QGraphicsPixmapItem):
     def __init__(self, array: np.ndarray, opacity: float = 0.5) -> None:
         # 初始化
-        super(LabelItem, self).__init__()
+        super(ImageItem2, self).__init__()
 
         # 属性
         self.setOpacity(opacity)

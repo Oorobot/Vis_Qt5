@@ -22,18 +22,25 @@ from utility.MedicalImage2 import MedicalImage2
 from utility.vtktool import BoundingBox, labelToPoints, volumeCT, volumePT
 
 
-class VTKWidget(QMainWindow):
+class VolumeViewer(QMainWindow):
     image = None
     origin = None
     spacing = None
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.labelOpacity = 0.5
+        self.labelOpacity = 0.8
         self.cubeActors, self.textActors = [], []
 
         toolbar = QToolBar()
         toolbar.setMovable(False)
+
+        self.viewButton = QToolButton()
+        self.viewButton.setText("视图")
+        self.viewButton.setIcon(QIcon("asset/icon/view.png"))
+        self.viewButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.viewButton.setAutoRaise(True)
+        self.viewButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
 
         labelButton = QToolButton()
         labelButton.setText("标签")
@@ -42,7 +49,7 @@ class VTKWidget(QMainWindow):
 
         labelSlider = QSlider(Qt.Orientation.Horizontal)
         labelSlider.setRange(0, 100)
-        labelSlider.setValue(50)
+        labelSlider.setValue(self.labelOpacity * 100)
         labelSlider.setSingleStep(1)
         labelSlider.setMinimumWidth(50)
         labelSlider.setMaximumWidth(100)
@@ -54,6 +61,7 @@ class VTKWidget(QMainWindow):
         widget = QVTKRenderWindowInteractor()
         self.ren = vtkRenderer()
         widget.GetRenderWindow().AddRenderer(self.ren)
+        self.cam = self.ren.GetActiveCamera()
 
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
         self.setCentralWidget(widget)
@@ -85,16 +93,15 @@ class VTKWidget(QMainWindow):
             raise Exception(f"[ERROR] not support the image's modality = {image.modality}.")
 
     def adjustCamera(self):
-        camera = self.ren.GetActiveCamera()
         _ = (
             -0.5
             * max(self.image.size[0] * self.image.spacing[0], self.image.size[2] * self.image.spacing[2])
             / math.tan(math.pi / 6)
         )
-        camera.SetPosition(0.0, _, 0.0)
-        camera.SetFocalPoint(0.0, 0.0, 0.0)
-        camera.SetViewUp(0, 0, 1)
-        camera.SetViewAngle(60.0)
+        self.cam.SetPosition(0.0, _, 0.0)
+        self.cam.SetFocalPoint(0.0, 0.0, 0.0)
+        self.cam.SetViewUp(0, 0, 1)
+        self.cam.SetViewAngle(60.0)
         # camera.Azimuth(30.0)  # 表示 camera 的视点位置沿顺时针旋转 30 度角
         # camera.Elevation(30.0)  # 表示 camera 的视点位置沿向上的方面旋转 30 度角
 
@@ -174,6 +181,31 @@ class VTKWidget(QMainWindow):
             actor.GetTextProperty().SetOpacity(self.labelOpacity)
         self.centralWidget().GetRenderWindow().Render()
 
+    class ThreeD:
+        def __init__(self) -> None:
+            self.volumes = []
+            self.cubeActors = []
+            self.textActors = []
+
+        def initialize(self, **kwargs) -> None:
+            pass
+
+        def add(self, render: vtkRenderer) -> None:
+            for v in self.volumes:
+                render.AddVolume(v)
+            for a in self.cubeActors:
+                render.AddActor(a)
+            for a in self.textActors:
+                render.AddActor(a)
+
+        def remove(self, render: vtkRenderer) -> None:
+            for v in self.volumes:
+                render.RemoveVolume(v)
+            for a in self.cubeActors:
+                render.RemoveActor(a)
+            for a in self.textActors:
+                render.RemoveActor(a)
+
 
 if __name__ == "__main__":
     import sys
@@ -181,7 +213,7 @@ if __name__ == "__main__":
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-    widget = VTKWidget()
+    widget = VolumeViewer()
     image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
     image.modality = "CT"
     widget.addVolume(image)

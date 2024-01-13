@@ -2,17 +2,15 @@ from typing import Union
 
 import numpy as np
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPainter, QResizeEvent, QTransform, QWheelEvent
+from PyQt6.QtGui import QColor, QPainter, QResizeEvent, QWheelEvent
 from PyQt6.QtWidgets import QGraphicsView, QMessageBox, QWidget
 
 from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
-from widget.subview.GraphicsScene import GraphicsScene
-from widget.subview.ImageItem import ImageItem
-from widget.subview.LabelItem import LabelItem
+from widget import ImageItem, ImageItem2, ImageScene
 
 
-class GraphicsView(QGraphicsView):
+class ImageView(QGraphicsView):
     positionChanged = pyqtSignal(int)
 
     def __init__(self, view: str, parent: QWidget = None):
@@ -33,7 +31,7 @@ class GraphicsView(QGraphicsView):
 
         # 初始化
         super().__init__(parent)
-        self.__scene = GraphicsScene()
+        self.__scene = ImageScene()
         self.setScene(self.__scene)
 
         # 抗锯齿
@@ -163,7 +161,7 @@ class GraphicsView(QGraphicsView):
     def setLabelItem(self, labelArray: np.ndarray):
         if self.labelItem is not None:
             self.scene().removeItem(self.labelItem)  # 清除分割图
-        self.labelItem = LabelItem(labelArray, self.labelOpacity)
+        self.labelItem = ImageItem2(labelArray, self.labelOpacity)
         self.scene().addItem(self.labelItem)
 
     def setLabelItemOpacity(self, v: float):

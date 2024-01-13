@@ -19,8 +19,7 @@ from utility.constant import VIEW_TO_NAME
 from utility.io import ReadNIFTI
 from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
-from widget.GraphicsView import GraphicsView
-from widget.subwidget.ConstrastWindow import ConstrastWindow
+from widget import ImageConstrast, ImageView
 
 
 class ImageViewer(QMainWindow):
@@ -122,7 +121,7 @@ class ImageViewer(QMainWindow):
         constrastButton.setText("对比度")
         constrastButton.setIcon(QIcon("asset/icon/constrast.png"))
         constrastButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.constrastWindow = ConstrastWindow()
+        self.constrastWindow = ImageConstrast()
         toolbar.addWidget(constrastButton)
 
         if bimodal:
@@ -164,7 +163,7 @@ class ImageViewer(QMainWindow):
         toolbar.addSeparator()
 
         self.addToolBar(toolbar)
-        self.view = GraphicsView("t", self)
+        self.view = ImageView("t", self)
         self.setCentralWidget(self.view)
 
         self.resize(1920, 1080)

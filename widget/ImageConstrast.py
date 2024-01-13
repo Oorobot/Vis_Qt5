@@ -3,7 +3,7 @@ from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 
-class ConstrastWindow(QWidget):
+class ImageConstrast(QWidget):
     constrastChanged = pyqtSignal(float, float)
 
     def __init__(self, mi=0.0, ma=0.0, parent: QWidget = None) -> None:

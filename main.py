@@ -6,9 +6,7 @@ from PyQt6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QTabBar, QTa
 
 from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
-from widget.ImageViewer import ImageViewer
-from widget.Sidebar import Sidebar
-from widget.VTKWidget import VTKWidget
+from widget import CollapsibleSidebar, ImageViewer, VolumeViewer
 
 
 class Main(QMainWindow):
@@ -21,7 +19,7 @@ class Main(QMainWindow):
         layout = QHBoxLayout(widget)
 
         # 侧边栏
-        self.sidebar = Sidebar(self)
+        self.sidebar = CollapsibleSidebar(self)
         layout.addWidget(self.sidebar, 1)
 
         # 侧边栏隐藏按钮
@@ -57,7 +55,7 @@ class Main(QMainWindow):
                 viewer.setImage(image)
                 viewer.view.reset()
             if uid.endswith("3D"):
-                vtkViewer = VTKWidget()
+                vtkViewer = VolumeViewer()
                 vtkViewer.addVolume(image)
                 index = self.tabWidget.addTab(vtkViewer, title)
                 self.tabWidget.setCurrentIndex(index)
@@ -71,7 +69,7 @@ class Main(QMainWindow):
                 viewer.view.reset()
             if uid.endswith("3DFused"):
                 # 3D
-                vtkViewer = VTKWidget()
+                vtkViewer = VolumeViewer()
                 vtkViewer.addVolume(image)
                 index = self.tabWidget.addTab(vtkViewer, title)
                 self.tabWidget.setCurrentIndex(index)
