@@ -3,10 +3,8 @@ from typing import List, Tuple
 import numpy as np
 import SimpleITK as sitk
 from matplotlib.cm import get_cmap
-from vtkmodules.all import vtkVolume
 
 from utility.common import float_01_to_uint8_0255
-from utility.vtktool import volumeCT, volumePT
 
 
 class MedicalImage:
@@ -50,16 +48,15 @@ class MedicalImage:
                 self.cmap = None
 
     def normlize(self, amin: float = None, amax: float = None):
-        if self.channel == 1:
+        if self.channel == 1 and self.array.size != 0:
             if amin is None:
                 amin = self.array.min()
             if amax is None:
                 amax = self.array.max()
-            _array = 1.0 * (self.array - amin) / (amax - amin)
-            _array = np.clip((_array * 255).round(), 0, 255)
+            _array = 1.0 * (self.array - amin) / (amax - amin + np.finfo(np.float32).eps)
         else:
             _array = self.array
-        self.array_norm = _array.astype(np.uint8)
+        self.array_norm = float_01_to_uint8_0255(_array)
 
     def plane_origin(self, view: str, pos: int):
         """

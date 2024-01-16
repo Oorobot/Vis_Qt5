@@ -5,8 +5,8 @@ import numpy as np
 import SimpleITK as sitk
 from matplotlib.cm import get_cmap
 
-from utility.common import float_01_to_uint8_0255
-from utility.MedicalImage import MedicalImage
+from .common import float_01_to_uint8_0255
+from .medical_image import MedicalImage
 
 
 class MedicalImage2:
@@ -35,20 +35,26 @@ class MedicalImage2:
         self.array_norm = None
         self.array_norm_pt = None
         self.normlize()
-        self.normlize_pt(5.0)
+        self.normlize_pt()
 
     def normlize(self, amin: float = None, amax: float = None):
-        if amin is None:
-            amin = self.array.min()
-        if amax is None:
-            amax = self.array.max()
-        _array = (self.array - amin) / (amax - amin)
+        if self.array.size != 0:
+            if amin is None:
+                amin = self.array.min()
+            if amax is None:
+                amax = self.array.max()
+            _array = (self.array - amin) / (amax - amin + np.finfo(np.float32).eps)
+        else:
+            _array = self.array
         self.array_norm = float_01_to_uint8_0255(_array)
 
     def normlize_pt(self, amax: float = None):
-        if amax is None:
-            amax = self.array_pt.max()
-        _array = self.array_pt / amax
+        if self.array_pt.size != 0:
+            if amax is None:
+                amax = self.array_pt.max()
+            _array = self.array_pt / (amax + np.finfo(np.float32).eps)
+        else:
+            _array = self.array_pt
         self.array_norm_pt = float_01_to_uint8_0255(_array)
 
     def plane_ct(self, view: str, pos: int):

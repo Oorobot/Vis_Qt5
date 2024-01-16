@@ -1,7 +1,7 @@
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QHBoxLayout, QRadioButton, QSizePolicy, QSpacerItem, QWidget
 
-from utility.MedicalImage import MedicalImage
+from utility import MedicalImage
 
 
 class CollapsibleChild(QWidget):

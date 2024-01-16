@@ -4,9 +4,7 @@ from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QFileDialog, QGridLayout, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
-from utility.io import ReadImage
-from utility.MedicalImage import MedicalImage
-from utility.MedicalImage2 import MedicalImage2
+from utility import MedicalImage, MedicalImage2, read_image
 
 from .collapsible_widget import CollapsibleWidget
 from .message_box import information
@@ -144,7 +142,7 @@ class CollapsibleSidebar(QWidget):
         if len(filename[0]) == 0:
             return
 
-        uid_dict_image = ReadImage(filename[0])
+        uid_dict_image = read_image(filename[0])
         self.add_collapsible_widget(uid_dict_image)
 
     def delete_button_clicked(self):
@@ -168,7 +166,7 @@ class CollapsibleSidebar(QWidget):
                 information("该功能仅支持PET或CT三维成像。")
                 return
 
-            title = "%s - %s".format(
+            title = "{0} - {1}".format(
                 widget.collapsible_button.text().split(" ")[0], child.radio_button.text().split(" ")[0]
             )
             self.image_displayed.emit(f"{uid}-{image_type}", title, child.image)
@@ -194,5 +192,4 @@ class CollapsibleSidebar(QWidget):
                 image = MedicalImage2.from_ct_pt(imageCT, imagePT)
                 self.fusion_image_displayed.emit(uid + fusion_type, title, image)
                 return
-        else:
-            information("该功能仅支持PET/CT融合成像。")
+        information("该功能仅支持PET/CT融合成像。")

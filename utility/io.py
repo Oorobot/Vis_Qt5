@@ -6,11 +6,11 @@ import numpy as np
 import SimpleITK as sitk
 from pydicom.uid import generate_uid
 
-from utility.MedicalImage import MedicalImage
-from utility.MedicalSlice import MedicalSlice
+from .medical_image import MedicalImage
+from .medical_slice import MedicalSlice
 
 
-def ReadNIFTI(file: str, only_image=False) -> Union[dict, MedicalImage]:
+def read_nifti(file: str, only_image=False) -> Union[dict, MedicalImage]:
     filename = os.path.basename(file)
     image = sitk.ReadImage(file)
     medical_image = MedicalImage(
@@ -38,7 +38,7 @@ def ReadNIFTI(file: str, only_image=False) -> Union[dict, MedicalImage]:
         }
 
 
-def ReadDICOM(file: str) -> dict:
+def read_dicom(file: str) -> dict:
     filename, ext = os.path.splitext(file)
     directory = os.path.dirname(filename)
     files = glob(os.path.join(directory, "*" + ext))
@@ -120,25 +120,25 @@ def ReadDICOM(file: str) -> dict:
     return slices
 
 
-def ReadImage(file: str):
+def read_image(file: str):
     _, ext = os.path.splitext(file)
     if file.endswith(".dcm"):
-        return ReadDICOM(file)
+        return read_dicom(file)
     elif file.endswith((".nii", ".nii.gz")):
-        return ReadNIFTI(file)
+        return read_nifti(file)
     else:
         raise Exception("not support {} format file.".format(ext))
 
 
 if __name__ == "__main__":
     file = r"DATA\001\ImageFileName000.dcm"
-    series_RGB = ReadDICOM(file)
+    series_RGB = read_dicom(file)
     file = r"DATA\001\CT\ImageFileName000.dcm"
-    ct = ReadDICOM(file)
+    ct = read_dicom(file)
     file = r"DATA\001\PET\ImageFileName000.dcm"
-    pt = ReadDICOM(file)
+    pt = read_dicom(file)
     file = r"DATA\ThreePhaseBone_001\001_FLOW.dcm"
-    nm = ReadDICOM(file)
+    nm = read_dicom(file)
     file = r"DATA\001_CT.nii.gz"
-    niigz = ReadNIFTI(file)
+    niigz = read_nifti(file)
     0

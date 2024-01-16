@@ -4,8 +4,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QTabBar, QTabWidget, QToolButton, QWidget
 
-from utility.MedicalImage import MedicalImage
-from utility.MedicalImage2 import MedicalImage2
+from utility import MedicalImage, MedicalImage2
 from widget import CollapsibleSidebar, ImageViewer, VolumeViewer
 
 
@@ -23,80 +22,77 @@ class Main(QMainWindow):
         layout.addWidget(self.sidebar, 1)
 
         # 侧边栏隐藏按钮
-        self.hideButton = QToolButton(self)
-        self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
-        self.hideButton.setFixedHeight(60)
-        self.hideButton.setFixedWidth(15)
-        layout.addWidget(self.hideButton)
+        self.hide_sidebar_button = QToolButton(self)
+        self.hide_sidebar_button.setArrowType(Qt.ArrowType.LeftArrow)
+        self.hide_sidebar_button.setFixedHeight(60)
+        self.hide_sidebar_button.setFixedWidth(15)
+        layout.addWidget(self.hide_sidebar_button)
 
         # 标签页
-        self.tabWidget = QTabWidget(self)
-        layout.addWidget(self.tabWidget, 4)
+        self.tab_widget = QTabWidget(self)
+        layout.addWidget(self.tab_widget, 4)
 
         # 信号与槽
-        self.sidebar.displayImage2D.connect(self.addTab)
-        self.sidebar.displayImage3D.connect(self.addTab)
-        self.sidebar.displayImageFused.connect(self.addTab)
-        self.hideButton.clicked.connect(self.hideButtonClicked)
+        self.sidebar.image_displayed.connect(self.add_tab)
+        self.sidebar.fusion_image_displayed.connect(self.add_tab)
+        self.hide_sidebar_button.clicked.connect(self.hide_sidebar)
 
         # 样式
         self.resize(1920, 1080)
         self.show()
 
-    def addTab(self, uid: str, title: str, image: Union[MedicalImage, MedicalImage2]):
+    def add_tab(self, uid: str, title: str, image: Union[MedicalImage, MedicalImage2]):
         if uid in self.tabs:
-            self.tabWidget.setCurrentIndex(self.tabs.index(uid))
+            self.tab_widget.setCurrentIndex(self.tabs.index(uid))
         else:
             if uid.endswith("2D"):
-                viewer = ImageViewer()
-                index = self.tabWidget.addTab(viewer, title)
-                self.tabWidget.setCurrentIndex(index)
+                viewer = ImageViewer(image)
+                index = self.tab_widget.addTab(viewer, title)
+                self.tab_widget.setCurrentIndex(index)
                 # 重置图像大小
-                viewer.setImage(image)
-                viewer.view.reset()
-            if uid.endswith("3D"):
-                vtkViewer = VolumeViewer()
-                vtkViewer.addVolume(image)
-                index = self.tabWidget.addTab(vtkViewer, title)
-                self.tabWidget.setCurrentIndex(index)
-            if uid.endswith("2DFusion"):
+                # viewer.view.reset()
+            elif uid.endswith("2DFusion"):
                 # 2D
-                viewer = ImageViewer(bimodal=True)
-                index = self.tabWidget.addTab(viewer, title)
-                self.tabWidget.setCurrentIndex(index)
+                viewer = ImageViewer(image)
+                index = self.tab_widget.addTab(viewer, title)
+                self.tab_widget.setCurrentIndex(index)
                 # 重置图像大小
-                viewer.setImage(image)
-                viewer.view.reset()
-            if uid.endswith("3DFusion"):
+                # viewer.view.reset()
+            elif uid.endswith("3D"):
+                vtkViewer = VolumeViewer(image)
+                index = self.tab_widget.addTab(vtkViewer, title)
+                self.tab_widget.setCurrentIndex(index)
+            elif uid.endswith("3DFusion"):
                 # 3D
-                vtkViewer = VolumeViewer()
-                vtkViewer.addVolume(image)
-                index = self.tabWidget.addTab(vtkViewer, title)
-                self.tabWidget.setCurrentIndex(index)
+                vtkViewer = VolumeViewer(image)
+                index = self.tab_widget.addTab(vtkViewer, title)
+                self.tab_widget.setCurrentIndex(index)
 
             # 关闭按钮
             tabCloseButton = QToolButton()
             tabCloseButton.setIcon(QIcon("asset/icon/close.png"))
             tabCloseButton.setStyleSheet("background-color:transparent")
             tabCloseButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-            tabCloseButton.clicked.connect(lambda: self.removeTab(self.tabs.index(uid)))
-            self.tabWidget.tabBar().setTabButton(index, QTabBar.ButtonPosition.RightSide, tabCloseButton)
+            tabCloseButton.clicked.connect(lambda: self.remove_tab(self.tabs.index(uid)))
+            self.tab_widget.tabBar().setTabButton(index, QTabBar.ButtonPosition.RightSide, tabCloseButton)
 
             self.tabs.append(uid)
 
-    def removeTab(self, index):
-        self.tabWidget.removeTab(index)
-        self.tabs.pop(index)
+    def remove_tab(self, index):
+        self.tab_widget.removeTab(index)
+        widget = self.tabs.pop(index)
+        widget.close()
+        widget.destroy()
 
-    def hideButtonClicked(self):
+    def hide_sidebar(self):
         layout: QHBoxLayout = self.centralWidget().layout()
         if self.sidebar.isVisible():
             self.sidebar.setVisible(False)
-            self.hideButton.setArrowType(Qt.ArrowType.RightArrow)
+            self.hide_sidebar_button.setArrowType(Qt.ArrowType.RightArrow)
             layout.setStretch(0, 0)
         else:
             self.sidebar.setVisible(True)
-            self.hideButton.setArrowType(Qt.ArrowType.LeftArrow)
+            self.hide_sidebar_button.setArrowType(Qt.ArrowType.LeftArrow)
             layout.setStretch(0, 1)
 
 
@@ -106,7 +102,7 @@ if __name__ == "__main__":
 
     from PyQt6.QtWidgets import QApplication
 
-    from utility.io import ReadNIFTI
+    from utility import read_nifti
 
     args = argparse.ArgumentParser("debug Widget.")
     args.add_argument(
@@ -126,15 +122,15 @@ if __name__ == "__main__":
     elif args.widget == "ImageViewer":
         app = QApplication(sys.argv)
         MainWindow = ImageViewer()
-        image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
+        image = read_nifti(r"DATA\001_CT.nii.gz", True)
         MainWindow.setImage(image)
         MainWindow.show()
         sys.exit(app.exec())
     elif args.widget == "VolumeViewer":
         app = QApplication(sys.argv)
         widget = VolumeViewer()
-        ct = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
-        pt = ReadNIFTI(r"DATA\001_SUVbw.nii.gz", True)
+        ct = read_nifti(r"DATA\001_CT.nii.gz", True)
+        pt = read_nifti(r"DATA\001_SUVbw.nii.gz", True)
         widget.addVolume(MedicalImage2(ct.array, pt.array, ct.size, ct.origin, ct.spacing, ct.direction, ct.channel))
         sys.exit(app.exec())
     else:

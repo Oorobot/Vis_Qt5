@@ -1,4 +1,3 @@
-import json
 import math
 from typing import List, Tuple, Union
 
@@ -8,36 +7,41 @@ import vtkmodules.vtkInteractionStyle
 import vtkmodules.vtkRenderingAnnotation
 import vtkmodules.vtkRenderingOpenGL2
 import vtkmodules.vtkRenderingVolumeOpenGL2
-from PyQt6.QtCore import QSignalMapper, Qt
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QIcon
-from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMenu, QMessageBox, QSlider, QToolBar, QToolButton, QWidget
+from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMenu, QSlider, QToolBar, QToolButton, QWidget
 from vtkmodules.all import vtkActor, vtkTextActor3D, vtkVolume
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 # noinspection PyUnresolvedReferences
 from vtkmodules.vtkRenderingCore import vtkRenderer
 
-from utility.common import get_body_mask, get_colors
-from utility.constant import LABEL_TO_NAME
-from utility.io import ReadNIFTI
-from utility.MedicalImage import MedicalImage
-from utility.MedicalImage2 import MedicalImage2
-from utility.vtktool import BoundingBox, labelToPoints, volumeCT, volumePT
+from utility import (
+    MedicalImage,
+    MedicalImage2,
+    bbox,
+    get_body_mask,
+    get_colors,
+    json_to_labels,
+    nifti_to_labels,
+    volume_ct,
+    volume_pt,
+)
 
 from .message_box import error, information
 
 
 class VolumeViewer(QMainWindow):
-    images: List[Union[MedicalImage, MedicalImage2]] = []
-    volumes: List[List[vtkVolume]] = []
-    image_body: np.ndarray = None
-    actors: List[Tuple[vtkActor, vtkTextActor3D]] = []
-    label_opacity: float = 0.8
-    checked_view: int = 0
-    view_actions: List[QAction] = []
-
     def __init__(self, image: Union[MedicalImage, MedicalImage2], parent: QWidget = None):
         super().__init__(parent)
+        self.images: List[Union[MedicalImage, MedicalImage2]] = []
+        self.volumes: List[List[vtkVolume]] = []
+        self.image_body: np.ndarray = None
+        self.actors: List[Tuple[vtkActor, vtkTextActor3D]] = []
+        self.label_opacity: float = 0.8
+        self.checked_view: int = 0
+
+        # 样式
         self.setStyleSheet("QToolBar {border: none;}" "QToolButton::menu-indicator {image: none;}")
 
         # 工具栏
@@ -148,36 +152,18 @@ class VolumeViewer(QMainWindow):
             return
         try:
             if filename[0].endswith(".nii.gz") or filename[0].endswith(".nii"):
-                labelImage: MedicalImage = ReadNIFTI(filename[0], only_image=True)
-                classes, labels = labelToPoints(labelImage.array)
-
-                num_colors = max(classes)
-                if num_colors == 0:  # 不存在
-                    return
-                colors = get_colors(num_colors)
-
-                for c, l in zip(classes, labels):
-                    _labels.append([*l, LABEL_TO_NAME[c], colors[c - 1]])
-
+                classes, labels = nifti_to_labels(filename[0])
             elif filename[0].endswith(".json"):
-                print('[INFO] a list should be in json, e.g. [{"class_name": xxx, "bbox": [x1, y1, z1, x2, y2, z2]}]')
-                labelJson = json.load(open(filename[0], "r"))
-                if len(labelJson) == 0:
-                    return
-
-                classes, unique_classes, labels = [], set(), []
-                for label in labelJson:
-                    classes.append(label["class_name"])
-                    unique_classes.add(label["class_name"])
-                    labels.append(label["bbox"])
-                colors = get_colors(len(unique_classes))
-                c2c = {c1: c2 for c1, c2 in zip(unique_classes, colors)}
-
-                for c, l in zip(classes, labels):
-                    _labels.append([*l, c, c2c[c]])
-
+                classes, labels = json_to_labels(filename[0])
             else:
                 raise Exception("not support the file format.")
+
+            unique_classes = set(classes)
+            colors = get_colors(len(unique_classes))
+            c2c = {c1: c2 for c1, c2 in zip(unique_classes, colors)}
+            for c, l in zip(classes, labels):
+                _labels.append([*l, c, c2c[c]])
+
         except Exception as e:
             error(f"解析失败：{str(e)}")
 
@@ -198,7 +184,7 @@ class VolumeViewer(QMainWindow):
         _origin = [-0.5 * s1 * s2 for s1, s2 in zip(self.images[0].size, self.images[0].spacing)]
         _spacing = self.images[0].spacing
         for i, _l in enumerate(_labels):
-            self.actors.append(BoundingBox(_l[0:3], _l[3:6], _origin, _spacing, _l[6], _l[7], self.label_opacity))
+            self.actors.append(bbox(_l[0:3], _l[3:6], _origin, _spacing, _l[6], _l[7], self.label_opacity))
             self.images.append(self.images[0][_l[2] : _l[5] + 1, _l[1] : _l[4] + 1, _l[0] : _l[3] + 1])
             self.volumes.append(self.image_to_volume(self.images[-1]))
             _action = self.view_menu.addAction(QIcon("asset/icon/checked1.png"), f"{i + 1} - {_l[6]}")
@@ -245,18 +231,17 @@ class VolumeViewer(QMainWindow):
 
     @staticmethod
     def image_to_volume(image: Union[MedicalImage, MedicalImage2], image_body: np.ndarray = None):
-        _volume = None
         # 根据图像获取原点与体素间距
         _origin = [-0.5 * s1 * s2 for s1, s2 in zip(image.size, image.spacing)]
         _spacing = image.spacing
 
         if image.modality == "CT":
-            _volume = [volumeCT(image.array, _origin, _spacing, image_body)]
+            _volume = [volume_ct(image.array, _origin, _spacing, image_body)]
         elif image.modality == "PT":
-            _volume = [volumePT(image.array, _origin, _spacing, image_body)]
+            _volume = [volume_pt(image.array, _origin, _spacing, image_body)]
         elif image.modality == "PTCT":
             _volume = [
-                volumeCT(image.array, _origin, _spacing, image_body),
-                volumePT(image.array_pt, _origin, _spacing, image_body),
+                volume_ct(image.array, _origin, _spacing, image_body),
+                volume_pt(image.array_pt, _origin, _spacing, image_body),
             ]
         return _volume

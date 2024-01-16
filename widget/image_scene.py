@@ -7,6 +7,3 @@ class ImageScene(QGraphicsScene):
         super().__init__(parent)
         # 默认黑色背景
         self.setBackgroundBrush(QBrush(QColor("#000000")))
-
-    def setBackGroudColor(self, color: QColor):
-        self.setBackgroundBrush(QBrush(color))

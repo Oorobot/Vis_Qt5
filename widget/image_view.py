@@ -3,39 +3,39 @@ from typing import Union
 import numpy as np
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QResizeEvent, QWheelEvent
-from PyQt6.QtWidgets import QGraphicsView, QMessageBox, QWidget
+from PyQt6.QtWidgets import QGraphicsView, QWidget
 
-from utility.MedicalImage import MedicalImage
-from utility.MedicalImage2 import MedicalImage2
+from utility import MedicalImage, MedicalImage2
 
-from .ImageItem import ImageItem
-from .ImageItem2 import ImageItem2
-from .ImageScene import ImageScene
+from .image_item import ImageItem
+from .image_item2 import ImageItem2
+from .image_scene import ImageScene
+from .message_box import warning
 
 
 class ImageView(QGraphicsView):
-    positionChanged = pyqtSignal(int)
+    position_changed = pyqtSignal(int)
 
     def __init__(self, view: str, parent: QWidget = None):
         # 定义成员属性
         self.view = view
         self.image, self.label = None, None
-        self.imageItem, self.labelItem = None, None
-        self.__position = self.__positionMax = {"s": 1, "c": 1, "t": 1}
+        self.image_item, self.label_item = None, None
+        self._position = self._position_max = {"s": 1, "c": 1, "t": 1}
 
-        self.colorMap = None
+        self.color_map = None
 
-        self.scaleFactor = 1.05
-        self.__scaleDefault = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
+        self.scale_factor = 1.05
+        self._scale_default = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
 
-        self.resizeOrSlide = False
+        self.resize_or_slide = False
 
-        self.labelOpacity = 0.50
+        self.label_opacity = 0.50
 
         # 初始化
         super().__init__(parent)
-        self.__scene = ImageScene()
-        self.setScene(self.__scene)
+        self._scene = ImageScene()
+        self.setScene(self._scene)
 
         # 抗锯齿
         self.setRenderHints(
@@ -58,26 +58,26 @@ class ImageView(QGraphicsView):
 
     @property
     def position(self):
-        return self.__position[self.view]
+        return self._position[self.view]
 
     @position.setter
     def position(self, p: int):
-        self.__position[self.view] = min(max(p, 1), self.position_max)
+        self._position[self.view] = min(max(p, 1), self.position_max)
 
     @property
     def position_max(self):
-        return self.__positionMax[self.view]
+        return self._position_max[self.view]
 
     @property
     def scale_default(self):
-        return self.__scaleDefault[self.view]
+        return self._scale_default[self.view]
 
     def wheelEvent(self, event: QWheelEvent) -> None:
-        if self.resizeOrSlide:
+        if self.resize_or_slide:
             if event.angleDelta().y() > 0:
-                factor = self.scaleFactor
+                factor = self.scale_factor
             else:
-                factor = 1 / self.scaleFactor
+                factor = 1 / self.scale_factor
             self.scale(factor, factor)
         else:
             if event.angleDelta().y() > 0:
@@ -85,8 +85,8 @@ class ImageView(QGraphicsView):
             else:
                 self.position -= 1
             # 位置信息改变
-            self.positionChanged.emit(self.position)
-            self.setCurrentPlane()
+            self.position_changed.emit(self.position)
+            self.set_current_plane()
 
     def reset(self) -> None:
         size_s, size_c, size_t = (s1 * s2 for s1, s2 in zip(self.image.size, self.image.spacing))
@@ -95,7 +95,7 @@ class ImageView(QGraphicsView):
             min(self.height() * 1.0 / size_t, self.width() * 1.0 / size_s),
             min(self.height() * 1.0 / size_c, self.width() * 1.0 / size_s),
         )
-        self.__scaleDefault = {
+        self._scale_default = {
             "s": (self.image.spacing[1] * _scale_s, self.image.spacing[2] * _scale_s),
             "c": (self.image.spacing[0] * _scale_c, self.image.spacing[2] * _scale_c),
             "t": (self.image.spacing[0] * _scale_t, self.image.spacing[1] * _scale_t),
@@ -110,83 +110,81 @@ class ImageView(QGraphicsView):
         self.scene().setSceneRect(-w * 10, -h * 10, w * 20, h * 20)
 
     # 切换视图
-    def setView(self, view: str):
+    def set_view(self, view: str):
         self.view = view
         self.reset()
         if self.image is not None:
-            self.setImageItem(self.image.plane(self.view, self.position))
+            self.set_image_item(self.image.plane(self.view, self.position))
         if self.label is not None:
-            self.setLabelItem(self.label.plane_origin(self.view, self.position))
+            self.set_label_item(self.label.plane_origin(self.view, self.position))
 
     # 切换图像
-    def setImage(self, image: Union[MedicalImage, MedicalImage2]):
+    def set_image(self, image: Union[MedicalImage, MedicalImage2]):
         self.image = image
         # 位置信息
-        self.__position = {
+        self._position = {
             "s": self.image.size[0] // 2 + 1,
             "c": self.image.size[1] // 2 + 1,
             "t": self.image.size[2] // 2 + 1,
         }
-        self.__positionMax = {
+        self._position_max = {
             "s": self.image.size[0],
             "c": self.image.size[1],
             "t": self.image.size[2],
         }
         # 设置背景色
         if self.image.cmap is not None:
-            self.__scene.setBackGroudColor(QColor(*[round(_ * 255) for _ in self.image.cmap(0)]))
+            self._scene.setBackgroundBrush(QColor(*[round(_ * 255) for _ in self.image.cmap(0)]))
         # 初始化缩放信息
         self.reset()
         # 添加图像
-        self.setImageItem(self.image.plane(self.view, self.position))
+        self.set_image_item(self.image.plane(self.view, self.position))
 
     # 设置ImageItem
-    def setImageItem(self, imageArray: np.ndarray):
-        if self.imageItem is not None:
-            self.scene().removeItem(self.imageItem)  # 清除图像
+    def set_image_item(self, image_array: np.ndarray):
+        if self.image_item is not None:
+            self.scene().removeItem(self.image_item)  # 清除图像
         else:
             self.reset()  # 缩放
 
-        self.imageItem = ImageItem(imageArray)
-        self.scene().addItem(self.imageItem)
+        self.image_item = ImageItem(image_array)
+        self.scene().addItem(self.image_item)
 
-    def setLabel(self, label: MedicalImage):
+    def set_label(self, label: MedicalImage):
         if self.image is None:
-            messageBox = QMessageBox(QMessageBox.Icon.Warning, "警告", "打开图像", QMessageBox.StandardButton.Close)
-            messageBox.exec()
+            warning("请先打开图像。")
         elif label.size != self.image.size:
-            messageBox = QMessageBox(QMessageBox.Icon.Warning, "警告", "分割图与图像的大小不同", QMessageBox.StandardButton.Close)
-            messageBox.exec()
+            warning("分割图与图像的大小尺寸不同。")
         else:
             self.label = label
-            self.setLabelItem(self.label.plane_origin(self.view, self.position))
+            self.set_label_item(self.label.plane_origin(self.view, self.position))
 
-    def setLabelItem(self, labelArray: np.ndarray):
-        if self.labelItem is not None:
-            self.scene().removeItem(self.labelItem)  # 清除分割图
-        self.labelItem = ImageItem2(labelArray, self.labelOpacity)
-        self.scene().addItem(self.labelItem)
+    def set_label_item(self, labelArray: np.ndarray):
+        if self.label_item is not None:
+            self.scene().removeItem(self.label_item)  # 清除分割图
+        self.label_item = ImageItem2(labelArray, self.label_opacity)
+        self.scene().addItem(self.label_item)
 
-    def setLabelItemOpacity(self, v: float):
-        self.labelOpacity = v
-        if self.labelItem is not None:
-            self.labelItem.setOpacity(self.labelOpacity)
+    def set_label_opacity(self, v: float):
+        self.label_opacity = v
+        if self.label_item is not None:
+            self.label_item.setOpacity(self.label_opacity)
 
     # 设置当前平面
-    def setCurrentPlane(self):
+    def set_current_plane(self):
         if self.image is not None:
-            self.setImageItem(self.image.plane(self.view, self.position))
+            self.set_image_item(self.image.plane(self.view, self.position))
         if self.label is not None:
-            self.setLabelItem(self.label.plane_origin(self.view, self.position))
+            self.set_label_item(self.label.plane_origin(self.view, self.position))
 
     def mirror1(self):  # 水平镜像
-        self.setTransform(self.transform().scale(-1, 1))
+        self.scale(-1, 1)
 
     def mirror2(self):  # 垂直镜像
-        self.setTransform(self.transform().scale(1, -1))
+        self.scale(1, -1)
 
     def rotate1(self):  # 顺时针90°
-        self.setTransform(self.transform().rotate(90))
+        self.rotate(90)
 
     def rotate2(self):  # 逆时针90°
-        self.setTransform(self.transform().rotate(-90))
+        self.rotate(-90)
