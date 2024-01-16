@@ -1,3 +1,4 @@
+import math
 from typing import Union
 
 import numpy as np
@@ -21,7 +22,7 @@ class ImageItem(QGraphicsPixmapItem):
 
         # 属性
         self.w, self.h = self.pixmap().width(), self.pixmap().height()
-        self.left, self.top = round(-self.w / 2), round(-self.h / 2)
+        self.left, self.top = math.ceil(-self.w / 2.0), math.ceil(-self.h / 2.0)
 
     def boundingRect(self) -> QRectF:
         return QRectF(self.left, self.top, self.w, self.h)

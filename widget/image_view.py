@@ -1,42 +1,24 @@
 from typing import Union
 
 import numpy as np
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPainter, QResizeEvent, QWheelEvent
-from PyQt6.QtWidgets import QGraphicsView, QWidget
+from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QMouseEvent, QPainter, QPen, QResizeEvent, QWheelEvent
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QWidget
 
 from utility import MedicalImage, MedicalImage2
 
 from .image_item import ImageItem
 from .image_item2 import ImageItem2
-from .image_scene import ImageScene
 from .message_box import warning
 
 
 class ImageView(QGraphicsView):
     position_changed = pyqtSignal(int)
 
-    def __init__(self, view: str, parent: QWidget = None):
-        # 定义成员属性
-        self.view = view
-        self.image, self.label = None, None
-        self.image_item, self.label_item = None, None
-        self._position = self._position_max = {"s": 1, "c": 1, "t": 1}
-
-        self.color_map = None
-
-        self.scale_factor = 1.05
-        self._scale_default = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
-
-        self.resize_or_slide = False
-
-        self.label_opacity = 0.50
-
+    def __init__(self, view: str, image: Union[MedicalImage, MedicalImage2], parent: QWidget = None):
         # 初始化
         super().__init__(parent)
-        self._scene = ImageScene()
-        self.setScene(self._scene)
-
+        self.setScene(QGraphicsScene())
         # 抗锯齿
         self.setRenderHints(
             QPainter.RenderHint.Antialiasing
@@ -45,16 +27,40 @@ class ImageView(QGraphicsView):
         )
         # 更新模式
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
-
         # 隐藏滚动条
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
         # 设置拖动
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
-        # 设置缩放中心
+        # 设置缩放和变换中心
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+
+        # 定义成员属性
+        self.view = view
+        self.image = None
+        self.image_item: ImageItem = None
+        self.label: MedicalImage = None
+        self.label_item: ImageItem2 = None
+        self.label_opacity: float = 0.50
+        #
+        self._position = {"s": 1, "c": 1, "t": 1}
+        self._position_max = {"s": 1, "c": 1, "t": 1}
+        #
+        self.scale_factor = 1.05
+        self._scale_default = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
+        #
+        self.set_image(image)
+
+        self.resize_or_slide = False
+
+        self.scene_pos = QPointF(0, 0)
+        self.pen_blue = QPen(
+            QColor("#0000FF"), 0.1, Qt.PenStyle.DashLine, Qt.PenCapStyle.SquareCap, Qt.PenJoinStyle.BevelJoin
+        )
+        self.pen_red = QPen(
+            QColor("#FF0000"), 0.1, Qt.PenStyle.DashLine, Qt.PenCapStyle.SquareCap, Qt.PenJoinStyle.BevelJoin
+        )
 
     @property
     def position(self):
@@ -88,12 +94,60 @@ class ImageView(QGraphicsView):
             self.position_changed.emit(self.position)
             self.set_current_plane()
 
-    def reset(self) -> None:
-        size_s, size_c, size_t = (s1 * s2 for s1, s2 in zip(self.image.size, self.image.spacing))
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        # scene 的大小随着 view 变化
+        w, h = event.size().width(), event.size().height()
+        self.scene().setSceneRect(-w * 10, -h * 10, w * 20, h * 20)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if self.dragMode() == QGraphicsView.DragMode.NoDrag:
+            self.scene_pos = self.mapToScene(event.pos())
+            self.scene().update()
+        else:
+            return super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self.dragMode() == QGraphicsView.DragMode.NoDrag:
+            self.scene_pos = self.mapToScene(event.pos())
+            self.scene().update()
+        else:
+            return super().mouseMoveEvent(event)
+
+    def drawForeground(self, painter: QPainter, rect: QRectF) -> None:
+        painter.setPen(self.pen_blue)
+        r = self.image_item.boundingRect()
+        if not r.contains(self.scene_pos):
+            if self.scene_pos.x() < r.left():
+                self.scene_pos.setX(r.left())
+            if self.scene_pos.x() > r.right():
+                self.scene_pos.setX(r.right())
+            if self.scene_pos.y() < r.top():
+                self.scene_pos.setY(r.top())
+            if self.scene_pos.y() > r.bottom():
+                self.scene_pos.setY(r.bottom())
+        if r.top() < self.scene_pos.y() - 1.5:
+            painter.drawLine(
+                QPointF(self.scene_pos.x(), r.top()), QPointF(self.scene_pos.x(), self.scene_pos.y() - 1.5)
+            )
+        if self.scene_pos.y() + 1.5 < r.bottom():
+            painter.drawLine(
+                QPointF(self.scene_pos.x(), self.scene_pos.y() + 1.5), QPointF(self.scene_pos.x(), r.bottom())
+            )
+        if r.left() < self.scene_pos.x() - 1.5:
+            painter.drawLine(
+                QPointF(r.left(), self.scene_pos.y()), QPointF(self.scene_pos.x() - 1.5, self.scene_pos.y())
+            )
+        if self.scene_pos.x() + 1.5 < r.right():
+            painter.drawLine(
+                QPointF(self.scene_pos.x() + 1.5, self.scene_pos.y()), QPointF(r.right(), self.scene_pos.y())
+            )
+
+    def reset(self):
+        _size_s, _size_c, _size_t = (s1 * s2 for s1, s2 in zip(self.image.size, self.image.spacing))
         _scale_s, _scale_c, _scale_t = (
-            min(self.height() * 1.0 / size_t, self.width() * 1.0 / size_c),
-            min(self.height() * 1.0 / size_t, self.width() * 1.0 / size_s),
-            min(self.height() * 1.0 / size_c, self.width() * 1.0 / size_s),
+            min(self.height() * 1.0 / _size_t, self.width() * 1.0 / _size_c),
+            min(self.height() * 1.0 / _size_t, self.width() * 1.0 / _size_s),
+            min(self.height() * 1.0 / _size_c, self.width() * 1.0 / _size_s),
         )
         self._scale_default = {
             "s": (self.image.spacing[1] * _scale_s, self.image.spacing[2] * _scale_s),
@@ -101,13 +155,8 @@ class ImageView(QGraphicsView):
             "t": (self.image.spacing[0] * _scale_t, self.image.spacing[1] * _scale_t),
         }
         self.resetTransform()
-        self.scale(*self.scale_default)  # x, y
         self.centerOn(0, 0)
-
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        # scene 的大小随着 view 变化
-        w, h = event.size().width(), event.size().height()
-        self.scene().setSceneRect(-w * 10, -h * 10, w * 20, h * 20)
+        self.scale(*self.scale_default)  # x, y
 
     # 切换视图
     def set_view(self, view: str):
@@ -132,11 +181,12 @@ class ImageView(QGraphicsView):
             "c": self.image.size[1],
             "t": self.image.size[2],
         }
-        # 设置背景色
-        if self.image.cmap is not None:
-            self._scene.setBackgroundBrush(QColor(*[round(_ * 255) for _ in self.image.cmap(0)]))
-        # 初始化缩放信息
-        self.reset()
+        # 背景色
+        if self.image.cmap is None:
+            self.scene().setBackgroundBrush(QColor("#000000"))
+        else:
+            self.scene().setBackgroundBrush(QColor(*[round(_ * 255) for _ in self.image.cmap(0)]))
+
         # 添加图像
         self.set_image_item(self.image.plane(self.view, self.position))
 

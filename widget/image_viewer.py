@@ -35,9 +35,8 @@ class ImageViewer(QMainWindow):
             "QLineEdit {background-color: transparent; border: none;}"
         )
 
-        self.view = ImageView("t", self)
+        self.view = ImageView("t", image, self)
         self.setCentralWidget(self.view)
-        self.view.set_image(image)
 
         toolbar = QToolBar()
         toolbar.setMovable(False)

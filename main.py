@@ -50,14 +50,14 @@ class Main(QMainWindow):
                 index = self.tab_widget.addTab(viewer, title)
                 self.tab_widget.setCurrentIndex(index)
                 # 重置图像大小
-                # viewer.view.reset()
+                viewer.view.reset()
             elif uid.endswith("2DFusion"):
                 # 2D
                 viewer = ImageViewer(image)
                 index = self.tab_widget.addTab(viewer, title)
                 self.tab_widget.setCurrentIndex(index)
                 # 重置图像大小
-                # viewer.view.reset()
+                viewer.view.reset()
             elif uid.endswith("3D"):
                 vtkViewer = VolumeViewer(image)
                 index = self.tab_widget.addTab(vtkViewer, title)
@@ -79,10 +79,8 @@ class Main(QMainWindow):
             self.tabs.append(uid)
 
     def remove_tab(self, index):
+        self.tabs.pop(index)
         self.tab_widget.removeTab(index)
-        widget = self.tabs.pop(index)
-        widget.close()
-        widget.destroy()
 
     def hide_sidebar(self):
         layout: QHBoxLayout = self.centralWidget().layout()
@@ -121,10 +119,10 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     elif args.widget == "ImageViewer":
         app = QApplication(sys.argv)
-        MainWindow = ImageViewer()
         image = read_nifti(r"DATA\001_CT.nii.gz", True)
-        MainWindow.setImage(image)
+        MainWindow = ImageViewer(image)
         MainWindow.show()
+        MainWindow.view.reset()
         sys.exit(app.exec())
     elif args.widget == "VolumeViewer":
         app = QApplication(sys.argv)
