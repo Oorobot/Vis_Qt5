@@ -12,6 +12,13 @@
             "justMyCode": true
         },
         {
+            "name": "MedicalImage",
+            "type": "python",
+            "request": "launch",
+            "module": "utility.MedicalImage",
+            "justMyCode": true
+        },
+        {
             "name": "MedicalImage2",
             "type": "python",
             "request": "launch",
@@ -22,21 +29,33 @@
             "name": "ImageViewer",
             "type": "python",
             "request": "launch",
-            "module": "widget.ImageViewer",
+            "module": "main",
+            "args": [
+                "--widget",
+                "ImageViewer"
+            ],
             "justMyCode": true
         },
         {
-            "name": "Sidebar",
+            "name": "CollapsibleSidebar",
             "type": "python",
             "request": "launch",
-            "module": "widget.Sidebar",
+            "module": "main",
+            "args": [
+                "--widget",
+                "CollapsibleSidebar"
+            ],
             "justMyCode": true
         },
         {
-            "name": "vtk",
+            "name": "VolumeViewer",
             "type": "python",
             "request": "launch",
-            "module": "widget.VTKWidget",
+            "module": "main",
+            "args": [
+                "--widget",
+                "VolumeViewer"
+            ],
             "justMyCode": true
         },
         {

@@ -21,12 +21,16 @@ from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
 from widget import ImageConstrast, ImageView
 
+from .ImageConstrast import ImageConstrast
+from .ImageView import ImageView
+
 
 class ImageViewer(QMainWindow):
     opacityChanged = pyqtSignal(float)
 
     def __init__(self, bimodal: bool = False, parent: QWidget = None) -> None:
         super().__init__(parent)
+        self.setStyleSheet("QToolButton::menu-indicator {image: none;}")
         self.bimodal = bimodal
 
         toolbar = QToolBar()
@@ -63,9 +67,10 @@ class ImageViewer(QMainWindow):
         viewButton = QToolButton()
         viewButton.setText("视图")
         viewButton.setIcon(QIcon("asset/icon/view.png"))
-        viewButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        viewButton.setAutoRaise(True)
+        viewButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+        viewButton.setAutoRaise(False)
         viewButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        viewButton.setArrowType(Qt.ArrowType.NoArrow)
         viewMenu = QMenu()
         viewS = viewMenu.addAction(QIcon("asset/icon/S.png"), "矢状面")
         viewC = viewMenu.addAction(QIcon("asset/icon/C.png"), "冠状面")
@@ -74,16 +79,18 @@ class ImageViewer(QMainWindow):
         toolbar.addWidget(viewButton)
 
         # 操作：重置、翻转
-        operateReset = toolbar.addAction(QIcon("asset/icon/reset.png"), "重置")
         operateButton = QToolButton()
         operateButton.setText("操作")
         operateButton.setIcon(QIcon("asset/icon/operate.png"))
-        operateButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        operateButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         operateButton.setAutoRaise(True)
         operateButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         operateMenu = QMenu()
+        operateReset = operateMenu.addAction(QIcon("asset/icon/reset.png"), "重置")
+        operateMenu.addSeparator()
         operateMirror1 = operateMenu.addAction(QIcon("asset/icon/mirror1.png"), "水平镜像")
         operateMirror2 = operateMenu.addAction(QIcon("asset/icon/mirror2.png"), "垂直镜像")
+        operateMenu.addSeparator()
         operateRotate1 = operateMenu.addAction(QIcon("asset/icon/rotate1.png"), "顺时针旋转")
         operateRotate2 = operateMenu.addAction(QIcon("asset/icon/rotate2.png"), "逆时针旋转")
         operateButton.setMenu(operateMenu)
@@ -93,7 +100,7 @@ class ImageViewer(QMainWindow):
         self.mouseLeftButton = QToolButton()
         self.mouseLeftButton.setText("普通")
         self.mouseLeftButton.setIcon(QIcon("asset/icon/arrow.png"))
-        self.mouseLeftButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.mouseLeftButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         self.mouseLeftButton.setAutoRaise(True)
         self.mouseLeftButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         mouseLeftMenu = QMenu()
@@ -106,7 +113,7 @@ class ImageViewer(QMainWindow):
         self.wheelButton = QToolButton()
         self.wheelButton.setText("切换")
         self.wheelButton.setIcon(QIcon("asset/icon/slide.png"))
-        self.wheelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.wheelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         self.wheelButton.setAutoRaise(True)
         self.wheelButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         wheelMenu = QMenu()
@@ -120,7 +127,7 @@ class ImageViewer(QMainWindow):
         constrastButton = QToolButton()
         constrastButton.setText("对比度")
         constrastButton.setIcon(QIcon("asset/icon/constrast.png"))
-        constrastButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        constrastButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         self.constrastWindow = ImageConstrast()
         toolbar.addWidget(constrastButton)
 
@@ -151,7 +158,7 @@ class ImageViewer(QMainWindow):
         labelButton = QToolButton()
         labelButton.setText("标签")
         labelButton.setIcon(QIcon("asset/icon/label.png"))
-        labelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        labelButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         labelSlider = QSlider(Qt.Orientation.Horizontal)
         labelSlider.setRange(0, 100)
         labelSlider.setValue(50)
@@ -303,16 +310,3 @@ class ImageViewer(QMainWindow):
         self.view.setImage(image)
         self.positionCurrent.setText(str(self.view.position))
         self.positionMax.setText(str(self.view.position_max))
-
-
-if __name__ == "__main__":
-    import sys
-
-    from PyQt6.QtWidgets import QApplication
-
-    app = QApplication(sys.argv)
-    MainWindow = ImageViewer()
-    image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
-    MainWindow.setImage(image)
-    MainWindow.show()
-    sys.exit(app.exec())

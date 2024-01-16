@@ -130,12 +130,12 @@ def BoundingBox(
     point2: List[int],
     origin: Tuple[float],
     spacing: Tuple[float],
-    color: Tuple[float],
     text: str,
+    color: Tuple[float],
     opacity: float,
 ):
-    x1, y1, z1 = [o + p * s for o, p, s in zip(origin, point1, spacing)]
-    x2, y2, z2 = [o + p * s for o, p, s in zip(origin, point2, spacing)]
+    x1, y1, z1 = [o + (p + 1) * s for o, p, s in zip(origin, point1, spacing)]
+    x2, y2, z2 = [o + (p + 1) * s for o, p, s in zip(origin, point2, spacing)]
     points = vtkPoints()
     points.SetNumberOfPoints(8)
     points.SetPoint(0, x1, y1, z1)
@@ -191,7 +191,6 @@ def BoundingBox(
     textActor.SetInput(text)
     textActor.SetPosition(x2, y1, z2)
     textActor.RotateX(90)
-    textActor.AddPosition(0, -1000, 0)
     textProperty = textActor.GetTextProperty()
     textProperty.SetColor(*color)
     textProperty.SetFontSize(28)
@@ -251,7 +250,7 @@ def labelToPoints(array: np.ndarray):
 
                     if y1 == y1_ and y2 == y2_:
                         classes.append(c)
-                        points.append([(int(x1), int(y1), int(z1)), (int(x2), int(y2), int(z2))])
+                        points.append([int(x1), int(y1), int(z1), int(x2), int(y2), int(z2)])
                         # 清除已找到的标注
                         c_array[z1 : z2 + 1, y1 : y2 + 1, x1 : x2 + 1] = 0
                         break

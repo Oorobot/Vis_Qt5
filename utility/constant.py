@@ -47,4 +47,6 @@ VIEW_TO_INT = {"s": 0, "c": 1, "t": 2}
 
 VIEW_TO_NAME = {"s": "矢状面", "c": "冠状面", "t": "横截面"}
 
-LABEL_TO_NAME = {1: "Infected", 2: "Non-infected", 3: "Bladder"}
+LABEL_TO_NAME = {1: "Lesion", 2: "Lesion", 3: "Bladder"}
+
+LABEL_TO_NAME2 = {1: "Infected", 2: "Non-infected", 3: "Bladder"}

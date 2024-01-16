@@ -2,12 +2,13 @@ from typing import Dict, List
 
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QFileDialog, QHBoxLayout, QMessageBox, QScrollArea, QToolButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QFileDialog, QGridLayout, QMessageBox, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
 from utility.io import ReadImage
 from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
-from widget import CollapsibleWidget
+
+from .CollapsibleWidget import CollapsibleWidget
 
 
 class CollapsibleSidebar(QWidget):
@@ -18,18 +19,21 @@ class CollapsibleSidebar(QWidget):
     def __init__(self, parent: QWidget = None) -> None:
         # 初始化
         super().__init__(parent)
+        self.setStyleSheet(
+            "QToolButton {background-color:transparent;}"
+            "QToolButton::hover {background-color:rgba(71,141,141,0.4);}"
+            "QToolButton::pressed {background-color:rgba(174,238,238,0.4);}"
+            "QScrollArea {background-color:transparent; border: none;}"
+        )
+
         self.checkedChildren: List[str] = []
         self.collapsibleWidgets: Dict[str, CollapsibleWidget] = {}
 
         self.setMinimumWidth(150)
 
-        layout = QHBoxLayout()
-        layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
 
-        layoutMain = QVBoxLayout()
-        self.widgetMain = QWidget()
-        self.widgetMain.setLayout(layoutMain)
-        layout.addWidget(self.widgetMain)
         # 主按钮
         openButton = QToolButton(self)
         openButton.setIcon(QIcon("asset/icon/open.png"))
@@ -37,57 +41,44 @@ class CollapsibleSidebar(QWidget):
         openButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         openButton.setToolTip("打开文件")
         openButton.setToolTipDuration(5000)
-        openButton.setObjectName("openButton")
-        openButton.setStyleSheet(
-            "#openButton{background-color:transparent;}"
-            "#openButton:hover{background-color:rgba(71,141,141,0.4);}"
-            "#openButton:pressed{background-color:rgba(174,238,238,0.4);}"
-        )
+
         display2DButton = QToolButton(self)
-        display2DButton.setIcon(QIcon("asset/icon/display2d.png"))
+        display2DButton.setIcon(QIcon("asset/icon/display2D.png"))
         display2DButton.setIconSize(QSize(30, 30))
         display2DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        display2DButton.setToolTip("2D浏览")
+        display2DButton.setToolTip("二维浏览")
         display2DButton.setToolTipDuration(5000)
-        display2DButton.setObjectName("display2DButton")
-        display2DButton.setStyleSheet(
-            "#display2DButton{background-color:transparent;}"
-            "#display2DButton:hover{background-color:rgba(71,141,141,0.4);}"
-            "#display2DButton:pressed{background-color:rgba(174,238,238,0.4);}"
-        )
+
         display3DButton = QToolButton(self)
-        display3DButton.setIcon(QIcon("asset/icon/display3d.png"))
+        display3DButton.setIcon(QIcon("asset/icon/display3D.png"))
         display3DButton.setIconSize(QSize(30, 30))
         display3DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        display3DButton.setToolTip("3D浏览")
+        display3DButton.setToolTip("三维浏览")
         display3DButton.setToolTipDuration(5000)
-        display3DButton.setObjectName("display3DButton")
-        display3DButton.setStyleSheet(
-            "#display3DButton{background-color:transparent;}"
-            "#display3DButton:hover{background-color:rgba(71,141,141,0.4);}"
-            "#display3DButton:pressed{background-color:rgba(174,238,238,0.4);}"
-        )
-        displayFusionButton = QToolButton(self)
-        displayFusionButton.setIcon(QIcon("asset/icon/displayFusion.png"))
-        displayFusionButton.setIconSize(QSize(30, 30))
-        displayFusionButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        displayFusionButton.setToolTip("融合浏览")
-        displayFusionButton.setToolTipDuration(5000)
-        displayFusionButton.setObjectName("displayFusionButton")
-        displayFusionButton.setStyleSheet(
-            "#displayFusionButton{background-color:transparent;}"
-            "#displayFusionButton:hover{background-color:rgba(71,141,141,0.4);}"
-            "#displayFusionButton:pressed{background-color:rgba(174,238,238,0.4);}"
-        )
 
-        layoutButton = QHBoxLayout()
+        displayFusion2DButton = QToolButton(self)
+        displayFusion2DButton.setIcon(QIcon("asset/icon/displayFusion2D.png"))
+        displayFusion2DButton.setIconSize(QSize(30, 30))
+        displayFusion2DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        displayFusion2DButton.setToolTip("二维融合")
+        displayFusion2DButton.setToolTipDuration(5000)
+
+        displayFusion3DButton = QToolButton(self)
+        displayFusion3DButton.setIcon(QIcon("asset/icon/displayFusion3D.png"))
+        displayFusion3DButton.setIconSize(QSize(30, 30))
+        displayFusion3DButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        displayFusion3DButton.setToolTip("三维融合")
+        displayFusion3DButton.setToolTipDuration(5000)
+
+        layoutButton = QGridLayout()
         layoutButton.setSpacing(20)
         layoutButton.setContentsMargins(0, 0, 0, 0)
-        layoutButton.addWidget(openButton)
-        layoutButton.addWidget(display2DButton)
-        layoutButton.addWidget(display3DButton)
-        layoutButton.addWidget(displayFusionButton)
-        layoutMain.addLayout(layoutButton)
+        layoutButton.addWidget(openButton, 0, 0, 2, 1)
+        layoutButton.addWidget(display2DButton, 0, 1, 1, 1)
+        layoutButton.addWidget(displayFusion2DButton, 1, 1, 1, 1)
+        layoutButton.addWidget(display3DButton, 0, 2, 1, 1)
+        layoutButton.addWidget(displayFusion3DButton, 1, 2, 1, 1)
+        layout.addLayout(layoutButton)
 
         # scrollArea
         self.layoutCollapsibleButtons = QVBoxLayout()
@@ -95,23 +86,20 @@ class CollapsibleSidebar(QWidget):
         self.layoutCollapsibleButtons.setSpacing(0)
         self.layoutCollapsibleButtons.setContentsMargins(0, 0, 0, 0)
         scrollArea = QScrollArea(self)
-        scrollArea.setObjectName("scrollArea")
-        scrollArea.setStyleSheet("#scrollArea{background-color:transparent; border: none;}")
         scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scrollAreaContent = QWidget(scrollArea)
         scrollAreaContent.setLayout(self.layoutCollapsibleButtons)
         # 添加
         scrollArea.setWidget(scrollAreaContent)
         scrollArea.setWidgetResizable(True)
-        layoutMain.addWidget(scrollArea)
-
-        self.setLayout(layout)
+        layout.addWidget(scrollArea)
 
         # 信号与槽
         openButton.clicked.connect(self.openButtonClicked)
         display2DButton.clicked.connect(self.display2DButtonClicked)
         display3DButton.clicked.connect(self.display3DButtonClicked)
-        displayFusionButton.clicked.connect(self.displayFusionButtonClicked)
+        displayFusion2DButton.clicked.connect(lambda: self.displayFusionButtonClicked("2DFusion"))
+        displayFusion3DButton.clicked.connect(lambda: self.displayFusionButtonClicked("3DFusion"))
 
     def addCollapsibleWidget(self, study_image: dict):
         for study_uid, series_image in study_image.items():
@@ -179,7 +167,7 @@ class CollapsibleSidebar(QWidget):
                 messageBox.exec()
                 return
 
-    def displayFusionButtonClicked(self):
+    def displayFusionButtonClicked(self, fusion_type: str):
         images, title = [], None
         for uid in self.checkedChildren:
             widget_uid, child_uid = uid.split("_^_")
@@ -195,22 +183,10 @@ class CollapsibleSidebar(QWidget):
                 imagePT, imageCT = images[0], images[1]
             else:
                 imagePT, imageCT = images[1], images[0]
-            image = MedicalImage2(imageCT, imagePT)
-            self.displayImageFused.emit(uid + "2DFused", title, image)
-            self.displayImageFused.emit(uid + "3DFused", title, image)
+            image = MedicalImage2.from_ct_pt(imageCT, imagePT)
+            self.displayImageFused.emit(uid + fusion_type, title, image)
         else:
             messageBox = QMessageBox(
                 QMessageBox.Icon.Information, "提示", "该功能仅支持PET/CT融合成像。", QMessageBox.StandardButton.Ok
             )
             messageBox.exec()
-
-
-if __name__ == "__main__":
-    import sys
-
-    from PyQt6.QtWidgets import QApplication
-
-    app = QApplication(sys.argv)
-    MainWindow = CollapsibleSidebar()
-    MainWindow.show()
-    sys.exit(app.exec())

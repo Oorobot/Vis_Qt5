@@ -4,7 +4,7 @@ from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QToolButton, QVBoxLayout, QWidget
 
-from widget import CollapsibleChild
+from .CollapsibleChild import CollapsibleChild
 
 
 class CollapsibleWidget(QWidget):

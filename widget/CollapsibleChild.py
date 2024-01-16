@@ -9,30 +9,29 @@ class CollapsibleChild(QWidget):
     deleted = pyqtSignal(str)
     checked = pyqtSignal(str, bool)
 
+    uid: str
+    image: MedicalImage
+
     def __init__(self, uid: str, description: str, image: MedicalImage, parent: QWidget = None) -> None:
         # 初始化
         super().__init__(parent)
+        self.setStyleSheet(
+            "QRadioButton {background-color: transparent; font-family: 'Times New Roman'; font-size: 15px;}"
+            "QRadioButton::hover {background-color: rgba(64,70,75,0.4);}"
+            "QRadioButton::pressed {background-color: rgba(119,136,153,0.4);}"
+        )
         self.uid = uid
         self.image = image
 
-        self.radioButton = QRadioButton(description, self)
+        self.radio_button = QRadioButton(description, self)
         layout = QHBoxLayout()
         layout.addItem(QSpacerItem(28, 30, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum))
-        layout.addWidget(self.radioButton)
+        layout.addWidget(self.radio_button)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.setFixedHeight(30)
         self.setMinimumWidth(150)
-
-        # 样式
-        self.radioButton.setObjectName("RadioButton")
-        self.radioButton.setStyleSheet(
-            "#RadioButton{background-color:transparent;}"
-            "#RadioButton:hover{background-color:rgba(64,70,75,0.4);}"
-            "#RadioButton:pressed{background-color:rgba(119,136,153,0.4);}"
-            "#RadioButton{font-family: 'Times New Roman'; font-size: 15px;}"
-        )
 
         # 初始隐藏
         self.setVisible(False)
@@ -45,7 +44,7 @@ class CollapsibleChild(QWidget):
         self.contextMenu.addAction(deleteAction)
 
         deleteAction.triggered.connect(self.deleteActionTriggered)
-        self.radioButton.toggled.connect(self.radioButtonToggled)
+        self.radio_button.toggled.connect(self.radioButtonToggled)
 
     def showCustomContextMenu(self, pos):
         self.contextMenu.show()

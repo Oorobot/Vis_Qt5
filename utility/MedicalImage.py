@@ -3,8 +3,10 @@ from typing import List, Tuple
 import numpy as np
 import SimpleITK as sitk
 from matplotlib.cm import get_cmap
+from vtkmodules.all import vtkVolume
 
 from utility.common import float_01_to_uint8_0255
+from utility.vtktool import volumeCT, volumePT
 
 
 class MedicalImage:
@@ -12,8 +14,8 @@ class MedicalImage:
         self,
         array: np.ndarray,
         size: Tuple[int, int, int],  # X, Y, Z
-        spacing: Tuple[int, int, int],  # X, Y, Z
         origin: Tuple[int, int, int],  # X, Y, Z
+        spacing: Tuple[int, int, int],  # X, Y, Z
         direction: List[int],  # Xx Xy Xz, Yx Yy Yz, Zx Zy Zz
         modality: str,  # PT, CT, NM, OT
         channel: int = None,
@@ -98,4 +100,31 @@ class MedicalImage:
             return _array
 
     def to_sitk_image(self) -> sitk.Image:
-        return sitk.ReadImage(self.files)
+        if self.files is not None:
+            return sitk.ReadImage(self.files)
+        else:
+            image = sitk.GetImageFromArray(self.array)
+            image.SetOrigin(self.origin)
+            image.SetSpacing(self.spacing)
+            image.SetDirection(self.direction)
+            return image
+
+    def __getitem__(self, item):
+        if isinstance(item, tuple):
+            array = self.array[item]
+        elif isinstance(item, slice):
+            array = self.array[item]
+        else:
+            array = self.array[item : item + 1]
+        return MedicalImage(array, array.shape, self.spacing, self.origin, self.direction, self.modality)
+
+
+if __name__ == "__main__":
+    from utility.io import ReadNIFTI
+
+    CT = ReadNIFTI(r"D:\Files\Desktop\chapter5\DATA\001_CT.nii.gz", True)
+    c1 = CT[0]
+    c2 = CT[1:]
+    c3 = CT[1:10, 2:30, 4:40]
+    c4 = CT[1:10, 2:30, ...]
+    c5 = CT[..., 1:2]

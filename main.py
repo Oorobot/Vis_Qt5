@@ -2,7 +2,7 @@ from typing import Union
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QTabBar, QTabWidget, QToolButton, QWidget
+from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QTabBar, QTabWidget, QToolButton, QWidget
 
 from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
@@ -59,7 +59,7 @@ class Main(QMainWindow):
                 vtkViewer.addVolume(image)
                 index = self.tabWidget.addTab(vtkViewer, title)
                 self.tabWidget.setCurrentIndex(index)
-            if uid.endswith("2DFused"):
+            if uid.endswith("2DFusion"):
                 # 2D
                 viewer = ImageViewer(bimodal=True)
                 index = self.tabWidget.addTab(viewer, title)
@@ -67,7 +67,7 @@ class Main(QMainWindow):
                 # 重置图像大小
                 viewer.setImage(image)
                 viewer.view.reset()
-            if uid.endswith("3DFused"):
+            if uid.endswith("3DFusion"):
                 # 3D
                 vtkViewer = VolumeViewer()
                 vtkViewer.addVolume(image)
@@ -101,8 +101,41 @@ class Main(QMainWindow):
 
 
 if __name__ == "__main__":
+    import argparse
     import sys
 
-    app = QApplication(sys.argv)
-    main = Main()
-    sys.exit(app.exec())
+    from PyQt6.QtWidgets import QApplication
+
+    from utility.io import ReadNIFTI
+
+    args = argparse.ArgumentParser("debug Widget.")
+    args.add_argument(
+        "--widget", type=str, default="main", choices=["main", "ImageViewer", "VolumeViewer", "CollapsibleSidebar"]
+    )
+
+    args = args.parse_args()
+    if args.widget == "main":
+        app = QApplication(sys.argv)
+        main = Main()
+        sys.exit(app.exec())
+    elif args.widget == "CollapsibleSidebar":
+        app = QApplication(sys.argv)
+        MainWindow = CollapsibleSidebar()
+        MainWindow.show()
+        sys.exit(app.exec())
+    elif args.widget == "ImageViewer":
+        app = QApplication(sys.argv)
+        MainWindow = ImageViewer()
+        image = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
+        MainWindow.setImage(image)
+        MainWindow.show()
+        sys.exit(app.exec())
+    elif args.widget == "VolumeViewer":
+        app = QApplication(sys.argv)
+        widget = VolumeViewer()
+        ct = ReadNIFTI(r"DATA\001_CT.nii.gz", True)
+        pt = ReadNIFTI(r"DATA\001_SUVbw.nii.gz", True)
+        widget.addVolume(MedicalImage2(ct.array, pt.array, ct.size, ct.origin, ct.spacing, ct.direction, ct.channel))
+        sys.exit(app.exec())
+    else:
+        print("end.")

@@ -7,7 +7,10 @@ from PyQt6.QtWidgets import QGraphicsView, QMessageBox, QWidget
 
 from utility.MedicalImage import MedicalImage
 from utility.MedicalImage2 import MedicalImage2
-from widget import ImageItem, ImageItem2, ImageScene
+
+from .ImageItem import ImageItem
+from .ImageItem2 import ImageItem2
+from .ImageScene import ImageScene
 
 
 class ImageView(QGraphicsView):

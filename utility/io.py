@@ -1,5 +1,6 @@
 import os
 from glob import glob
+from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
@@ -9,14 +10,14 @@ from utility.MedicalImage import MedicalImage
 from utility.MedicalSlice import MedicalSlice
 
 
-def ReadNIFTI(file: str, only_image=False) -> dict:
+def ReadNIFTI(file: str, only_image=False) -> Union[dict, MedicalImage]:
     filename = os.path.basename(file)
     image = sitk.ReadImage(file)
     medical_image = MedicalImage(
         sitk.GetArrayFromImage(image),
         image.GetSize(),
-        image.GetSpacing(),
         image.GetOrigin(),
+        image.GetSpacing(),
         image.GetDirection(),
         "OT",
         files=[os.path.abspath(file)],
@@ -105,8 +106,8 @@ def ReadDICOM(file: str) -> dict:
                 medical_image = MedicalImage(
                     volume,
                     (w, h, d),
-                    size_slices[0].spacing,
                     size_slices[0].origin,
+                    size_slices[0].spacing,
                     size_slices[0].direction,
                     size_slices[0].modality,
                     size_slices[0].channel,
