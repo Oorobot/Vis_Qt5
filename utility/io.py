@@ -20,7 +20,7 @@ def read_nifti(file: str, only_image=False) -> Union[dict, MedicalImage]:
         image.GetSpacing(),
         image.GetDirection(),
         "OT",
-        files=[os.path.abspath(file)],
+        files=os.path.abspath(file),
     )
     if only_image:
         return medical_image

@@ -126,10 +126,10 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     elif args.widget == "VolumeViewer":
         app = QApplication(sys.argv)
-        widget = VolumeViewer()
         ct = read_nifti(r"DATA\001_CT.nii.gz", True)
         pt = read_nifti(r"DATA\001_SUVbw.nii.gz", True)
-        widget.addVolume(MedicalImage2(ct.array, pt.array, ct.size, ct.origin, ct.spacing, ct.direction, ct.channel))
+        image = MedicalImage2.from_ct_pt(ct, pt)
+        widget = VolumeViewer(image)
         sys.exit(app.exec())
     else:
         print("end.")

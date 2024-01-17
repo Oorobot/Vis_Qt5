@@ -13,7 +13,6 @@ from PyQt6.QtWidgets import (
     QSlider,
     QToolBar,
     QToolButton,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -188,7 +187,7 @@ class ImageViewer(QMainWindow):
 
         if self.toolbar_mode == self.ToolbarMode.Bimodal:
             self.constrast_slider = QSlider(Qt.Orientation.Horizontal)
-            self.constrast_slider.setValue(25)
+            self.constrast_slider.setValue(50)
             self.constrast_slider.setRange(0, 50)
             self.constrast_slider.setSingleStep(1)
             self.constrast_slider.setMinimumWidth(50)

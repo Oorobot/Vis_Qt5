@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 import SimpleITK as sitk
@@ -17,7 +17,7 @@ class MedicalImage:
         direction: List[int],  # Xx Xy Xz, Yx Yy Yz, Zx Zy Zz
         modality: str,  # PT, CT, NM, OT
         channel: int = None,
-        files: List[str] = None,
+        files: Union[List[str], str] = None,
     ):
         self.array = array
         self.files = files
