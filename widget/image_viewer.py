@@ -1,3 +1,4 @@
+import enum
 from typing import Union
 
 from PyQt6.QtCore import Qt
@@ -12,6 +13,7 @@ from PyQt6.QtWidgets import (
     QSlider,
     QToolBar,
     QToolButton,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -20,19 +22,31 @@ from widget import ImageConstrast, ImageView
 
 from .image_constrast import ImageConstrast
 from .image_view import ImageView
+from .note import Note
 
 
 class ImageViewer(QMainWindow):
+    class ToolbarMode(enum.Enum):
+        Gray = 0
+        RGB = 1
+        Bimodal = 2
+
     def __init__(self, image: Union[MedicalImage, MedicalImage2], parent: QWidget = None) -> None:
         super().__init__(parent)
-        bimodal = isinstance(image, MedicalImage2)
+        if image.channel == 1:
+            self.toolbar_mode = self.ToolbarMode.Gray
+            if isinstance(image, MedicalImage2):
+                self.toolbar_mode = self.ToolbarMode.Bimodal
+        else:
+            self.toolbar_mode = self.ToolbarMode.RGB
 
         self.resize(1920, 1080)
         self.setStyleSheet(
             "QToolButton::menu-indicator {image: none;}"
             "QToolBar {border: none;}"
-            "QLabel {background-color: transparent;}"
-            "QLineEdit {background-color: transparent; border: none;}"
+            "QLabel {background-color: transparent; color: #00bfff;}"
+            "QLineEdit {background-color: transparent; border: none; color: #dc7e23}"
+            "QWidget {border: 1px;}"
         )
 
         self.view = ImageView("t", image, self)
@@ -43,32 +57,60 @@ class ImageViewer(QMainWindow):
         toolbar.setFloatable(False)
 
         # 视图和位置信息
-        self.view_name = QLabel()
+        self.view_name = QLabel(VIEW_TO_NAME["t"])
         self.view_name.setFixedWidth(80)
-        self.view_name.setText(VIEW_TO_NAME["t"])
         self.view_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.view_name.setStyleSheet("color: #12074D")
-        self.view_name.setFont(QFont("楷体", 12))
-        self.position_max = QLabel()
-        self.position_max.setText(str(0))
-        self.position_max.setFixedWidth(35)
-        self.position_max.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.position_max.setStyleSheet("color: #07255C")
-        self.position_max.setFont(QFont("Times New Roman", 12))
-        self.position_current = QLineEdit()
-        self.position_current.setText("0")
-        self.position_current.setFixedWidth(35)
-        self.position_current.setValidator(QIntValidator())
-        self.position_current.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.position_current.setFont(QFont("Times New Roman", 12))
-        self.position_current.setStyleSheet("color: #135170")
+        self.view_name.setFont(QFont("黑体", 16))
+        self.position = {
+            "s": Note(
+                str(self.view._position["s"]),
+                "S = {0}".format(self.view._position_max["s"]),
+                True,
+                QIntValidator(1, self.view._position_max["s"]),
+            ),
+            "c": Note(
+                str(self.view._position["c"]),
+                "C = {0}".format(self.view._position_max["c"]),
+                True,
+                QIntValidator(1, self.view._position_max["c"]),
+            ),
+            "t": Note(
+                str(self.view._position["t"]),
+                "T = {0}".format(self.view._position_max["t"]),
+                True,
+                QIntValidator(1, self.view._position_max["t"]),
+            ),
+        }
         toolbar.addWidget(self.view_name)
-        toolbar.addWidget(self.position_max)
-        toolbar.addWidget(self.position_current)
+        toolbar.addWidget(self.position["s"])
+        toolbar.addWidget(self.position["c"])
+        toolbar.addWidget(self.position["t"])
+
+        # Gray
+        if self.toolbar_mode == self.ToolbarMode.Gray:
+            self.pixel_value = Note(
+                f"{self.view.image_value:.2f}",
+                "HU"
+                if image.modality == "CT" or image.modality == "PTCT"
+                else "SUVbw"
+                if image.modality == "PT"
+                else "value",
+            )
+            toolbar.addWidget(self.pixel_value)
+        # RGB
+        elif self.toolbar_mode == self.ToolbarMode.RGB:
+            self.pixel_value1 = Note(f"{self.view.image_value[0]}", "R")
+            self.pixel_value2 = Note(f"{self.view.image_value[1]}", "G")
+            self.pixel_value3 = Note(f"{self.view.image_value[2]}", "B")
+            toolbar.addWidget(self.pixel_value1)
+            toolbar.addWidget(self.pixel_value2)
+            toolbar.addWidget(self.pixel_value3)
+        else:
+            self.pixel_value1 = Note(f"{self.view.image_value:.2f}", "HU")
+            self.pixel_value2 = Note(f"{self.view.image_value_pt:.2f}", "SUVbw")
+            toolbar.addWidget(self.pixel_value1)
+            toolbar.addWidget(self.pixel_value2)
         toolbar.addSeparator()
-        # 设置默认值
-        self.position_current.setText(str(self.view.position))
-        self.position_max.setText(str(self.view.position_max))
 
         # 三视图
         view_button = QToolButton()
@@ -144,7 +186,7 @@ class ImageViewer(QMainWindow):
         self.constrast_window.edit_window_level.setText(f"{(mi + ma) / 2:.2f}")
         self.constrast_window.edit_window_width.setText(f"{ma- mi:.2f}")
 
-        if bimodal:
+        if self.toolbar_mode == self.ToolbarMode.Bimodal:
             self.constrast_slider = QSlider(Qt.Orientation.Horizontal)
             self.constrast_slider.setValue(25)
             self.constrast_slider.setRange(0, 50)
@@ -187,6 +229,10 @@ class ImageViewer(QMainWindow):
         self.addToolBar(toolbar)
 
         # 信号与槽
+        self.position["s"].value_changed.connect(lambda: self.edit_position("s"))
+        self.position["c"].value_changed.connect(lambda: self.edit_position("c"))
+        self.position["t"].value_changed.connect(lambda: self.edit_position("t"))
+
         view_sagittal.triggered.connect(lambda: self.set_view("s"))
         view_coronal.triggered.connect(lambda: self.set_view("c"))
         view_transverse.triggered.connect(lambda: self.set_view("t"))
@@ -209,8 +255,6 @@ class ImageViewer(QMainWindow):
         label_slider.valueChanged.connect(self.adjust_label_opacity)
 
         self.view.position_changed.connect(self.set_position)
-        self.position_current.editingFinished.connect(self.set_current_plane)
-        self.position_current.textEdited.connect(self.validate_position)
 
     # 普通
     def activate_normal_mode(self):
@@ -280,20 +324,33 @@ class ImageViewer(QMainWindow):
     def set_view(self, v: str):
         self.view.set_view(v)
         self.view_name.setText(VIEW_TO_NAME[v])
-        self.position_current.setText(str(self.view.position))
-        self.position_max.setText(str(self.view.position_max))
 
-    def set_position(self, p: int):
-        self.position_current.setText(str(p))
-
-    def set_current_plane(self):
-        self.view.position = int(self.position_current.text())
+    def set_position(self, s: int, c: int, t: int):
+        self.position["s"].set_value(str(s))
+        self.position["c"].set_value(str(c))
+        self.position["t"].set_value(str(t))
+        if self.toolbar_mode == self.ToolbarMode.Gray:
+            self.pixel_value.set_value(f"{self.view.image_value:.2f}")
+        elif self.toolbar_mode == self.ToolbarMode.RGB:
+            self.pixel_value1.set_value(f"{self.view.image_value[0]}")
+            self.pixel_value2.set_value(f"{self.view.image_value[1]}")
+            self.pixel_value3.set_value(f"{self.view.image_value[2]}")
+        else:
+            self.pixel_value1.set_value(f"{self.view.image_value:.2f}")
+            self.pixel_value2.set_value(f"{self.view.image_value_pt:.2f}")
         self.view.set_current_plane()
 
-    def validate_position(self, t: str):
-        if t == "" or int(t) < 1:
-            self.position_current.setText("1")
-        elif int(t) > self.view.position_max:
-            self.position_current.setText(str(self.view.position_max))
+    def edit_position(self, v: str):
+        self.view._position[v] = int(self.position[v].text)
+        if self.toolbar_mode == self.ToolbarMode.Gray:
+            self.pixel_value.set_value(f"{self.view.image_value:.2f}")
+        elif self.toolbar_mode == self.ToolbarMode.RGB:
+            self.pixel_value1.set_value(f"{self.view.image_value[0]}")
+            self.pixel_value2.set_value(f"{self.view.image_value[1]}")
+            self.pixel_value3.set_value(f"{self.view.image_value[2]}")
         else:
-            return
+            self.pixel_value1.set_value(f"{self.view.image_value:.2f}")
+            self.pixel_value2.set_value(f"{self.view.image_value_pt:.2f}")
+        self.view.set_current_plane()
+        self.view.scene_pos = self.view.position_to_scene_pos()
+        self.view.scene().update()

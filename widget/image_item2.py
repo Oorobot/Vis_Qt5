@@ -1,5 +1,3 @@
-import math
-
 import cv2
 import numpy as np
 from PyQt6.QtCore import QPointF, QRectF
@@ -17,7 +15,7 @@ class ImageItem2(QGraphicsPixmapItem):
         # 属性
         self.setOpacity(opacity)
         self.w, self.h = array.shape[1], array.shape[0]
-        self.left, self.top = math.ceil(-self.w / 2.0), math.ceil(-self.h / 2.0)
+        self.left, self.top = -self.w / 2.0, -self.h / 2.0
 
         # 找到需要标注的位置及其颜色
         num_color = array.max()

@@ -54,9 +54,10 @@ class MedicalImage:
             if amax is None:
                 amax = self.array.max()
             _array = 1.0 * (self.array - amin) / (amax - amin + np.finfo(np.float32).eps)
+            _array = float_01_to_uint8_0255(_array)
         else:
             _array = self.array
-        self.array_norm = float_01_to_uint8_0255(_array)
+        self.array_norm = _array
 
     def plane_origin(self, view: str, pos: int):
         """

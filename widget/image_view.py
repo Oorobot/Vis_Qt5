@@ -1,3 +1,4 @@
+import copy
 from typing import Union
 
 import numpy as np
@@ -13,7 +14,7 @@ from .message_box import warning
 
 
 class ImageView(QGraphicsView):
-    position_changed = pyqtSignal(int)
+    position_changed = pyqtSignal(int, int, int)
 
     def __init__(self, view: str, image: Union[MedicalImage, MedicalImage2], parent: QWidget = None):
         # 初始化
@@ -47,20 +48,13 @@ class ImageView(QGraphicsView):
         self._position = {"s": 1, "c": 1, "t": 1}
         self._position_max = {"s": 1, "c": 1, "t": 1}
         #
-        self.scale_factor = 1.05
-        self._scale_default = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
+        self._scale_current = {"s": (1.0, 1.0), "c": (1.0, 1.0), "t": (1.0, 1.0)}
+        self._scale_default = None
         #
         self.set_image(image)
 
         self.resize_or_slide = False
-
-        self.scene_pos = QPointF(0, 0)
-        self.pen_blue = QPen(
-            QColor("#0000FF"), 0.1, Qt.PenStyle.DashLine, Qt.PenCapStyle.SquareCap, Qt.PenJoinStyle.BevelJoin
-        )
-        self.pen_red = QPen(
-            QColor("#FF0000"), 0.1, Qt.PenStyle.DashLine, Qt.PenCapStyle.SquareCap, Qt.PenJoinStyle.BevelJoin
-        )
+        self._scene_pos = QPointF(0, 0)
 
     @property
     def position(self):
@@ -78,21 +72,70 @@ class ImageView(QGraphicsView):
     def scale_default(self):
         return self._scale_default[self.view]
 
+    @property
+    def scale_current(self):
+        return self._scale_current[self.view]
+
+    @scale_current.setter
+    def scale_current(self, v):
+        self._scale_current[self.view] = v
+
+    @property
+    def image_rect(self):
+        return self.image_item.boundingRect()
+
+    @property
+    def image_value(self):
+        return self.image.array[self._position["t"] - 1, self._position["c"] - 1, self._position["s"] - 1]
+
+    @property
+    def image_value_pt(self):
+        if self.image.modality == "PTCT":
+            return self.image.array_pt[self._position["t"] - 1, self._position["c"] - 1, self._position["s"] - 1]
+        else:
+            return 0
+
+    @property
+    def scene_pos(self):
+        return self._scene_pos
+
+    @scene_pos.setter
+    def scene_pos(self, v: QPointF):
+        if not self.image_rect.contains(v):
+            if v.x() < self.image_rect.left():
+                v.setX(self.image_rect.left())
+            if v.x() > self.image_rect.right():
+                v.setX(self.image_rect.right())
+            if v.y() < self.image_rect.top():
+                v.setY(self.image_rect.top())
+            if v.y() > self.image_rect.bottom():
+                v.setY(self.image_rect.bottom())
+        self._scene_pos = v
+        # 修改 position
+        _pos = int(v.x() - self.image_rect.left()), int(v.y() - self.image_rect.top())
+        if self.view == "t":
+            self._position["s"], self._position["c"] = max(_pos[0], 1), max(_pos[1], 1)
+        elif self.view == "c":
+            self._position["s"], self._position["t"] = max(_pos[0], 1), max(_pos[1], 1)
+        else:
+            self._position["c"], self._position["t"] = max(_pos[0], 1), max(_pos[1], 1)
+        self.position_changed.emit(self._position["s"], self._position["c"], self._position["t"])
+
     def wheelEvent(self, event: QWheelEvent) -> None:
         if self.resize_or_slide:
             if event.angleDelta().y() > 0:
-                factor = self.scale_factor
+                factor = 1.05
             else:
-                factor = 1 / self.scale_factor
+                factor = 1 / 1.05
             self.scale(factor, factor)
+            self.scale_current = (self.scale_current[0] * factor, self.scale_current[1] * factor)
         else:
             if event.angleDelta().y() > 0:
                 self.position += 1
             else:
                 self.position -= 1
             # 位置信息改变
-            self.position_changed.emit(self.position)
-            self.set_current_plane()
+            self.position_changed.emit(self._position["s"], self._position["c"], self._position["t"])
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         # scene 的大小随着 view 变化
@@ -114,33 +157,53 @@ class ImageView(QGraphicsView):
             return super().mouseMoveEvent(event)
 
     def drawForeground(self, painter: QPainter, rect: QRectF) -> None:
-        painter.setPen(self.pen_blue)
-        r = self.image_item.boundingRect()
-        if not r.contains(self.scene_pos):
-            if self.scene_pos.x() < r.left():
-                self.scene_pos.setX(r.left())
-            if self.scene_pos.x() > r.right():
-                self.scene_pos.setX(r.right())
-            if self.scene_pos.y() < r.top():
-                self.scene_pos.setY(r.top())
-            if self.scene_pos.y() > r.bottom():
-                self.scene_pos.setY(r.bottom())
-        if r.top() < self.scene_pos.y() - 1.5:
-            painter.drawLine(
-                QPointF(self.scene_pos.x(), r.top()), QPointF(self.scene_pos.x(), self.scene_pos.y() - 1.5)
+        painter.setPen(
+            QPen(
+                QColor("#0000FF"),
+                1 / self.scale_current[0],
+                Qt.PenStyle.DotLine,
+                Qt.PenCapStyle.SquareCap,
+                Qt.PenJoinStyle.BevelJoin,
             )
-        if self.scene_pos.y() + 1.5 < r.bottom():
+        )
+        if self.image_rect.top() < self.scene_pos.y() - 1.5:
             painter.drawLine(
-                QPointF(self.scene_pos.x(), self.scene_pos.y() + 1.5), QPointF(self.scene_pos.x(), r.bottom())
+                QPointF(self.scene_pos.x(), self.image_rect.top()),
+                QPointF(self.scene_pos.x(), self.scene_pos.y() - 1.5),
             )
-        if r.left() < self.scene_pos.x() - 1.5:
+        if self.scene_pos.y() + 1.5 < self.image_rect.bottom():
             painter.drawLine(
-                QPointF(r.left(), self.scene_pos.y()), QPointF(self.scene_pos.x() - 1.5, self.scene_pos.y())
+                QPointF(self.scene_pos.x(), self.scene_pos.y() + 1.5),
+                QPointF(self.scene_pos.x(), self.image_rect.bottom()),
             )
-        if self.scene_pos.x() + 1.5 < r.right():
+        painter.setPen(
+            QPen(
+                QColor("#0000FF"),
+                1 / self.scale_current[1],
+                Qt.PenStyle.DotLine,
+                Qt.PenCapStyle.SquareCap,
+                Qt.PenJoinStyle.BevelJoin,
+            )
+        )
+        if self.image_rect.left() < self.scene_pos.x() - 1.5:
             painter.drawLine(
-                QPointF(self.scene_pos.x() + 1.5, self.scene_pos.y()), QPointF(r.right(), self.scene_pos.y())
+                QPointF(self.image_rect.left(), self.scene_pos.y()),
+                QPointF(self.scene_pos.x() - 1.5, self.scene_pos.y()),
             )
+        if self.scene_pos.x() + 1.5 < self.image_rect.right():
+            painter.drawLine(
+                QPointF(self.scene_pos.x() + 1.5, self.scene_pos.y()),
+                QPointF(self.image_rect.right(), self.scene_pos.y()),
+            )
+
+    def position_to_scene_pos(self):
+        if self.view == "t":
+            pos = (self._position["s"], self._position["c"])
+        elif self.view == "c":
+            pos = (self._position["s"], self._position["t"])
+        else:
+            pos = (self._position["c"], self._position["t"])
+        return QPointF(self.image_rect.left() + pos[0] + 0.5, self.image_rect.top() + pos[1] + 0.5)
 
     def reset(self):
         _size_s, _size_c, _size_t = (s1 * s2 for s1, s2 in zip(self.image.size, self.image.spacing))
@@ -154,6 +217,7 @@ class ImageView(QGraphicsView):
             "c": (self.image.spacing[0] * _scale_c, self.image.spacing[2] * _scale_c),
             "t": (self.image.spacing[0] * _scale_t, self.image.spacing[1] * _scale_t),
         }
+        self._scale_current = copy.deepcopy(self._scale_default)
         self.resetTransform()
         self.centerOn(0, 0)
         self.scale(*self.scale_default)  # x, y
@@ -164,6 +228,7 @@ class ImageView(QGraphicsView):
         self.reset()
         if self.image is not None:
             self.set_image_item(self.image.plane(self.view, self.position))
+            self.scene_pos = self.position_to_scene_pos()
         if self.label is not None:
             self.set_label_item(self.label.plane_origin(self.view, self.position))
 
@@ -234,7 +299,9 @@ class ImageView(QGraphicsView):
         self.scale(1, -1)
 
     def rotate1(self):  # 顺时针90°
-        self.rotate(90)
+        sx, sy = self.scale_current
+        self.setTransform(self.transform().scale(1 / sx, 1 / sy).scale(sy, sx).rotate(90))
 
     def rotate2(self):  # 逆时针90°
-        self.rotate(-90)
+        sx, sy = self.scale_current
+        self.setTransform(self.transform().scale(1 / sx, 1 / sy).scale(sy, sx).rotate(-90))
