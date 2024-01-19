@@ -248,7 +248,8 @@ class ImageViewer(QMainWindow):
         wheel_resize.triggered.connect(self.activate_resize_mode)
         wheel_slide.triggered.connect(self.activate_slide_mode)
 
-        constrast_button.clicked.connect(self.open_constrast_window)
+        constrast_button.clicked.connect(self.constrast_window.exec)
+        self.constrast_window.changed.connect(self.adjust_constrast)
 
         label_button.clicked.connect(self.open_label)
         label_slider.valueChanged.connect(self.adjust_label_opacity)
@@ -278,11 +279,6 @@ class ImageViewer(QMainWindow):
         self.wheel_button.setText("切换")
         self.wheel_button.setIcon(QIcon("asset/icon/slide.png"))
         self.view.resize_or_slide = False
-
-    # 对比度
-    def open_constrast_window(self):
-        self.constrast_window.show()
-        self.constrast_window.changed.connect(self.adjust_constrast)
 
     # 调整对比度
     def adjust_constrast(self, mi, ma):

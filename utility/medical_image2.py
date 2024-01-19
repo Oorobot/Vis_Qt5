@@ -134,19 +134,3 @@ class MedicalImage2:
             array = self.array[item : item + 1]
             array_pt = self.array_pt[item : item + 1]
         return MedicalImage2(array, array_pt, array.shape, self.origin, self.spacing, self.direction, self.channel)
-
-
-if __name__ == "__main__":
-    from utility.io import ReadNIFTI
-
-    CT = ReadNIFTI(r"D:\Files\Desktop\chapter5\DATA\001_CT.nii.gz", True)
-    CT.modality = "CT"
-    PT = ReadNIFTI(r"DATA\001_SUVbw.nii.gz", True)
-    PT.modality = "PT"
-
-    PTCT = MedicalImage2(CT, PT)
-
-    plane_fused = PTCT.plane_fused("c", 286)
-    plane_fused = plane_fused[:, :, ::-1]
-    cv2.imshow("fused", plane_fused)
-    cv2.waitKey(0)

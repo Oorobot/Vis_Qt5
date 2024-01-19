@@ -3,18 +3,11 @@ from typing import List, Tuple, Union
 
 import numpy as np
 import SimpleITK as sitk
-import vtkmodules.vtkInteractionStyle
-import vtkmodules.vtkRenderingAnnotation
-import vtkmodules.vtkRenderingOpenGL2
-import vtkmodules.vtkRenderingVolumeOpenGL2
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMenu, QSlider, QToolBar, QToolButton, QWidget
-from vtkmodules.all import vtkActor, vtkTextActor3D, vtkVolume
+from vtkmodules.all import vtkActor, vtkRenderer, vtkTextActor3D, vtkVolume
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
-
-# noinspection PyUnresolvedReferences
-from vtkmodules.vtkRenderingCore import vtkRenderer
 
 from utility import (
     MedicalImage,
@@ -220,7 +213,7 @@ class VolumeViewer(QMainWindow):
                 self.renderer.AddActor(c)
                 self.renderer.AddActor(t)
         self.adjust_camera(self.images[self.checked_view])
-        self.centralWidget().GetRenderWindow().Render()
+        # self.centralWidget().GetRenderWindow().Render()
 
     def adjust_label_opacity(self, v: int):
         self.label_opacity = 0.01 * v

@@ -30,22 +30,20 @@ class MedicalImage:
             channel if channel is not None else 1 if len(self.array.shape) == len(self.size) else self.array.shape[-1]
         )
 
-        assert self.channel == 1 or self.channel == 3, f"not support channel = {self.channel}."
+        # 映射颜色图
+        if self.channel == 1:
+            if self.modality == "PT" or self.modality == "NM":
+                self.cmap = get_cmap("binary")
+            else:  # CT, MR...
+                self.cmap = get_cmap("gray")
+        elif self.channel == 3:
+            self.cmap = None
+        else:
+            raise Exception(f"not support channel = {self.channel}.")
         assert len(self.size) == 3, f"not support Medical Image's dimension = {len(self.size)}."
 
         self.array_norm = None
         self.normlize()
-
-        # 映射颜色图
-        if self.modality == "CT":
-            self.cmap = get_cmap("gray")
-        elif self.modality == "PT" or self.modality == "NM":
-            self.cmap = get_cmap("binary")
-        else:
-            if self.channel == 1:
-                self.cmap = get_cmap("gray")
-            else:
-                self.cmap = None
 
     def normlize(self, amin: float = None, amax: float = None):
         if self.channel == 1 and self.array.size != 0:
@@ -115,14 +113,3 @@ class MedicalImage:
         else:
             array = self.array[item : item + 1]
         return MedicalImage(array, array.shape, self.spacing, self.origin, self.direction, self.modality)
-
-
-if __name__ == "__main__":
-    from utility.io import ReadNIFTI
-
-    CT = ReadNIFTI(r"D:\Files\Desktop\chapter5\DATA\001_CT.nii.gz", True)
-    c1 = CT[0]
-    c2 = CT[1:]
-    c3 = CT[1:10, 2:30, 4:40]
-    c4 = CT[1:10, 2:30, ...]
-    c5 = CT[..., 1:2]

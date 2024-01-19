@@ -1,9 +1,9 @@
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 
-class ImageConstrast(QWidget):
+class ImageConstrast(QDialog):
     changed = pyqtSignal(float, float)
 
     def __init__(self, mi=0.0, ma=0.0, parent: QWidget = None) -> None:
