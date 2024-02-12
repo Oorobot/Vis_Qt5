@@ -15,6 +15,7 @@ from .message_box import warning
 
 class ImageView(QGraphicsView):
     position_changed = pyqtSignal(int, int, int)
+    PJI_box_selected = pyqtSignal(int, int)
 
     def __init__(self, view: str, image: Union[MedicalImage, MedicalImage2], parent: QWidget = None):
         # 初始化
@@ -57,7 +58,7 @@ class ImageView(QGraphicsView):
         self._scene_pos = QPointF(0, 0)
 
         #
-        self.PJI_mode = True
+        self.PJI_mode = False
         self.PJI_box = None
 
     @property
@@ -151,10 +152,9 @@ class ImageView(QGraphicsView):
             self.scene_pos = self.mapToScene(event.pos())
             self.scene().update()
             if self.PJI_mode:
-                print("self.scene_pos", self.scene_pos, ", self.PJI_box", self.PJI_box)
                 self.PJI_box = (
-                    min(max(self.scene_pos.x() - 20, 0), self.image_rect.right() - 40),
-                    min(max(self.scene_pos.y() - 20, 0), self.image_rect.bottom() - 40),
+                    min(max(self.scene_pos.x() - 20, self.image_rect.left()), self.image_rect.right() - 40),
+                    min(max(self.scene_pos.y() - 20, self.image_rect.top()), self.image_rect.bottom() - 40),
                 )
         else:
             return super().mousePressEvent(event)
@@ -164,7 +164,6 @@ class ImageView(QGraphicsView):
             self.scene_pos = self.mapToScene(event.pos())
             self.scene().update()
             if self.PJI_mode:
-                print("self.scene_pos", self.scene_pos, ", self.PJI_box", self.PJI_box)
                 self.PJI_box = (
                     min(max(self.scene_pos.x() - 20, self.image_rect.left()), self.image_rect.right() - 40),
                     min(max(self.scene_pos.y() - 20, self.image_rect.top()), self.image_rect.bottom() - 40),
@@ -174,9 +173,15 @@ class ImageView(QGraphicsView):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if self.dragMode() == QGraphicsView.DragMode.NoDrag and self.PJI_mode:
-            pass
+            self.PJI_box = (
+                min(max(self.scene_pos.x() - 20, self.image_rect.left()), self.image_rect.right() - 40),
+                min(max(self.scene_pos.y() - 20, self.image_rect.top()), self.image_rect.bottom() - 40),
+            )
+            self.PJI_box_selected.emit(
+                int(self.PJI_box[0] - self.image_rect.left()), int(self.PJI_box[1] - self.image_rect.top())
+            )
         else:
-            return super().mouseReleaseEvent()
+            return super().mouseReleaseEvent(event)
 
     def drawForeground(self, painter: QPainter, rect: QRectF) -> None:
         painter.setPen(

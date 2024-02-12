@@ -1,6 +1,7 @@
 import enum
 from typing import Union
 
+import numpy as np
 import pydicom
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QDoubleValidator, QFont, QIcon, QIntValidator
@@ -53,10 +54,11 @@ class ImageViewer(QMainWindow):
 
         self.view = ImageView("t", image, self)
         self.setCentralWidget(self.view)
+        self.view.PJI_box_selected.connect(self.get_pji_box)
 
-        toolbar = QToolBar()
-        toolbar.setMovable(False)
-        toolbar.setFloatable(False)
+        self.toolbar = QToolBar()
+        self.toolbar.setMovable(False)
+        self.toolbar.setFloatable(False)
 
         # 视图和位置信息
         self.view_name = QLabel(VIEW_TO_NAME["t"])
@@ -83,10 +85,10 @@ class ImageViewer(QMainWindow):
                 QIntValidator(1, self.view._position_max["t"]),
             ),
         }
-        toolbar.addWidget(self.view_name)
-        toolbar.addWidget(self.position["s"])
-        toolbar.addWidget(self.position["c"])
-        toolbar.addWidget(self.position["t"])
+        self.toolbar.addWidget(self.view_name)
+        self.toolbar.addWidget(self.position["s"])
+        self.toolbar.addWidget(self.position["c"])
+        self.toolbar.addWidget(self.position["t"])
 
         # Gray
         if self.toolbar_mode == self.ToolbarMode.Gray:
@@ -98,21 +100,21 @@ class ImageViewer(QMainWindow):
                 if image.modality == "PT"
                 else "value",
             )
-            toolbar.addWidget(self.pixel_value)
+            self.toolbar.addWidget(self.pixel_value)
         # RGB
         elif self.toolbar_mode == self.ToolbarMode.RGB:
             self.pixel_value1 = Note(f"{self.view.image_value[0]}", "R")
             self.pixel_value2 = Note(f"{self.view.image_value[1]}", "G")
             self.pixel_value3 = Note(f"{self.view.image_value[2]}", "B")
-            toolbar.addWidget(self.pixel_value1)
-            toolbar.addWidget(self.pixel_value2)
-            toolbar.addWidget(self.pixel_value3)
+            self.toolbar.addWidget(self.pixel_value1)
+            self.toolbar.addWidget(self.pixel_value2)
+            self.toolbar.addWidget(self.pixel_value3)
         else:
             self.pixel_value1 = Note(f"{self.view.image_value:.2f}", "HU")
             self.pixel_value2 = Note(f"{self.view.image_value_pt:.2f}", "SUVbw")
-            toolbar.addWidget(self.pixel_value1)
-            toolbar.addWidget(self.pixel_value2)
-        toolbar.addSeparator()
+            self.toolbar.addWidget(self.pixel_value1)
+            self.toolbar.addWidget(self.pixel_value2)
+        self.toolbar.addSeparator()
 
         # 三视图
         view_button = QToolButton()
@@ -127,7 +129,7 @@ class ImageViewer(QMainWindow):
         view_coronal = view_menu.addAction(QIcon("asset/icon/C.png"), "冠状面")
         view_transverse = view_menu.addAction(QIcon("asset/icon/T.png"), "横截面")
         view_button.setMenu(view_menu)
-        toolbar.addWidget(view_button)
+        self.toolbar.addWidget(view_button)
 
         # 操作：重置、翻转
         operate_button = QToolButton()
@@ -145,7 +147,7 @@ class ImageViewer(QMainWindow):
         operate_rotate1 = operate_menu.addAction(QIcon("asset/icon/rotate1.png"), "顺时针旋转")
         operate_rotate2 = operate_menu.addAction(QIcon("asset/icon/rotate2.png"), "逆时针旋转")
         operate_button.setMenu(operate_menu)
-        toolbar.addWidget(operate_button)
+        self.toolbar.addWidget(operate_button)
 
         # 鼠标左键
         self.mouse_left_button = QToolButton()
@@ -158,7 +160,7 @@ class ImageViewer(QMainWindow):
         mouse_left_normal = mouse_left_menu.addAction(QIcon("asset/icon/arrow.png"), "普通")
         mouse_left_drag = mouse_left_menu.addAction(QIcon("asset/icon/drag.png"), "拖动")
         self.mouse_left_button.setMenu(mouse_left_menu)
-        toolbar.addWidget(self.mouse_left_button)
+        self.toolbar.addWidget(self.mouse_left_button)
 
         # 鼠标滑轮
         self.wheel_button = QToolButton()
@@ -171,8 +173,8 @@ class ImageViewer(QMainWindow):
         wheel_slide = wheel_menu.addAction(QIcon("asset/icon/slide.png"), "切换")
         wheel_resize = wheel_menu.addAction(QIcon("asset/icon/resize.png"), "缩放")
         self.wheel_button.setMenu(wheel_menu)
-        toolbar.addWidget(self.wheel_button)
-        toolbar.addSeparator()
+        self.toolbar.addWidget(self.wheel_button)
+        self.toolbar.addSeparator()
 
         # 对比度
         constrast_button = QToolButton()
@@ -180,7 +182,7 @@ class ImageViewer(QMainWindow):
         constrast_button.setIcon(QIcon("asset/icon/constrast.png"))
         constrast_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         self.constrast_window = ImageConstrast()
-        toolbar.addWidget(constrast_button)
+        self.toolbar.addWidget(constrast_button)
         # 设置默认值
         mi, ma = image.array.min(), image.array.max()
         self.constrast_window.edit_min.setText(f"{mi:.2f}")
@@ -201,9 +203,9 @@ class ImageViewer(QMainWindow):
             self.constrast_max.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.constrast_max.setFixedWidth(30)
             self.constrast_max.setFont(QFont("Times New Roman", 12))
-            toolbar.addWidget(self.constrast_slider)
-            toolbar.addWidget(self.constrast_max)
-            toolbar.addSeparator()
+            self.toolbar.addWidget(self.constrast_slider)
+            self.toolbar.addWidget(self.constrast_max)
+            self.toolbar.addSeparator()
 
             # 归一化
             self.view.image.normlize_pt(float(self.constrast_max.text()) * 0.1)
@@ -224,19 +226,19 @@ class ImageViewer(QMainWindow):
         label_slider.setSingleStep(1)
         label_slider.setMinimumWidth(50)
         label_slider.setMaximumWidth(100)
-        toolbar.addWidget(label_button)
-        toolbar.addWidget(label_slider)
-        toolbar.addSeparator()
+        self.toolbar.addWidget(label_button)
+        self.toolbar.addWidget(label_slider)
+        self.toolbar.addSeparator()
 
         # AI
         self.ai_button = QToolButton()
         self.ai_button.setText("AI")
         self.ai_button.setIcon(QIcon("asset/icon/ai.png"))
-        self.ai_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-        toolbar.addWidget(self.ai_button)
-        self.timer_message_box = TimerMessageBox(QMessageBox.Icon.Information, "信息")
+        self.ai_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.toolbar.addWidget(self.ai_button)
+        self.timer_message_box = TimerMessageBox(QMessageBox.Icon.Information, "正在处理中...")
 
-        self.addToolBar(toolbar)
+        self.addToolBar(self.toolbar)
 
         # 信号与槽
         self.position["s"].value_changed.connect(lambda: self.edit_position("s"))
@@ -267,7 +269,7 @@ class ImageViewer(QMainWindow):
 
         self.view.position_changed.connect(self.set_position)
 
-        self.ai_button.clicked.connect(self.ai_inference)
+        self.ai_button.clicked.connect(self.inference)
 
     # 普通
     def activate_normal_mode(self):
@@ -363,11 +365,11 @@ class ImageViewer(QMainWindow):
         self.view.scene_pos = self.view.position_to_scene_pos()
         self.view.scene().update()
 
-    def ai_inference(self):
+    def inference(self):
         # TODO: 整合入模型
         if isinstance(self.view.image, MedicalImage) and self.view.image.modality == "NM":
             _dcm = pydicom.dcmread(self.view.image.files[0])
-            if _dcm.StudyDescription == "Three Phase Bone":
+            if _dcm.StudyDescription == "Three Phase Bone" and _dcm.SeriesDescription == "FLOW":
                 # 选择膝部或者髋部
                 selection = QMessageBox()
                 selection.setIcon(QMessageBox.Icon.Question)
@@ -375,35 +377,89 @@ class ImageViewer(QMainWindow):
                 selection.setText("骨三相诊断：膝部或髋部")
                 selection.addButton("膝部", QMessageBox.ButtonRole.YesRole)
                 selection.addButton("髋部", QMessageBox.ButtonRole.NoRole)
-
-                result = selection.exec()
-                if result == QMessageBox.ButtonRole.NoRole:
-                    information("请选择感兴趣区域.")
-                    self.view.PJI_mode = True
-                    self.view.PJI_mode = False
+                selection.exec()
+                # 膝部
+                if selection.clickedButton().text() == "膝部":
+                    self.woker = PJIWorker(self.view.image, "knee")
+                    self.woker.finished.connect(self.get_pji_result)
+                    self.woker.start()
+                    self.timer_message_box.exec()
+                    return
+                # 髋部
                 else:
-                    image = self.view.image
-
-                self.woker = PJIWorker(self.view.image, "...")
-                self.woker.finished.connect(self.get_pji_result)
-                self.woker.start()
-                self.timer_message_box.exec()
+                    self.view.PJI_mode = True
+                    self.toolbar.setDisabled(True)
+                    self.set_view("t")
+                    information("请选择感兴趣区域：\n鼠标左键点击将显示红框，\n鼠标移动，红框跟随，\n鼠标松开，红框所在区域即为感兴趣区域。")
+                    return
             else:
                 information("AI功能不支持当前影像。")
                 return
         elif isinstance(self.view.image, MedicalImage2) and self.view.image.modality == "PTCT":
-            self.woker = FRIWorker(self.view.image, "...")
+            self.woker = FRIWorker(self.view.image)
             self.woker.finished.connect(self.get_fri_result)
             self.woker.start()
             self.timer_message_box.exec()
+            return
         else:
             information("AI功能不支持当前影像。")
             return
 
+    def get_pji_box(self, left, top):
+        print(f"[INFO] PJI ROI: ({left}, {top}), ({left+40}, {top+40})")
+        #
+        self.view.PJI_mode = False
+        self.view.PJI_box = None
+        self.toolbar.setDisabled(False)
+        #
+        roi_array = np.zeros_like(self.view.image.array)
+        roi_array[:, top : top + 40, left : left + 40] = 1
+        roi_image = MedicalImage(
+            roi_array,
+            self.view.image.size,
+            self.view.image.origin,
+            self.view.image.spacing,
+            self.view.image.direction,
+            "OT",
+            1,
+        )
+        self.view.set_label(roi_image)
+        #
+        direction = "left" if left + 19 <= 64 else "right"
+        self.woker = PJIWorker(self.view.image[0:25, top : top + 40, left : left + 40], "hip", direction)
+        self.woker.finished.connect(self.get_pji_result)
+        self.woker.start()
+        self.timer_message_box.exec()
+
     def get_pji_result(self, result):
-        print("result: ", result)
+        print(f"[INFO] PJI result: {result}")
+        self.ai_button.setText(result)
         self.timer_message_box.accept()
+        information(f"[INFO] PJI 的诊断结果为 {result}.")
 
     def get_fri_result(self, result):
-        print("result: ", result)
+        print(f"[INFO] FRI result: {result}")
         self.timer_message_box.accept()
+        information(f"[INFO] FRI 的检测诊断结果为 {result}.")
+
+        # 解析结果
+        classes, labels = [], []
+        for label in result:
+            classes.append(label["class_name"])
+            labels.append(label["bbox"])
+        unique_classes = list(set(classes))
+
+        #
+        result_array = np.zeros_like(self.view.image.array)
+        for c, l in zip(classes, labels):
+            result_array[l[2] : l[5], l[1] : l[4], l[0] : l[3]] = unique_classes.index(c)
+        result_image = MedicalImage(
+            result_array,
+            self.view.image.size,
+            self.view.image.origin,
+            self.view.image.spacing,
+            self.view.image.direction,
+            "OT",
+            1,
+        )
+        self.view.set_label(result_image)

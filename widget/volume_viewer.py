@@ -5,7 +5,7 @@ import numpy as np
 import SimpleITK as sitk
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMenu, QSlider, QToolBar, QToolButton, QWidget
+from PyQt6.QtWidgets import QFileDialog, QMainWindow, QMenu, QMessageBox, QSlider, QToolBar, QToolButton, QWidget
 from vtkmodules.all import vtkActor, vtkRenderer, vtkTextActor3D, vtkVolume
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
@@ -20,8 +20,9 @@ from utility import (
     volume_ct,
     volume_pt,
 )
+from worker import FRIWorker
 
-from .message_box import error, information
+from .message_box import TimerMessageBox, error, information
 
 
 class VolumeViewer(QMainWindow):
@@ -52,12 +53,6 @@ class VolumeViewer(QMainWindow):
         view_button.setMenu(self.view_menu)
         toolbar.addWidget(view_button)
 
-        body_button = QToolButton()
-        body_button.setText("人体")
-        body_button.setIcon(QIcon("asset/icon/body.png"))
-        body_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-        toolbar.addWidget(body_button)
-
         label_button = QToolButton()
         label_button.setText("标签")
         label_button.setIcon(QIcon("asset/icon/label.png"))
@@ -73,6 +68,21 @@ class VolumeViewer(QMainWindow):
         toolbar.addWidget(label_slider)
         toolbar.addSeparator()
 
+        # 仅保留人体
+        body_button = QToolButton()
+        body_button.setText("人体")
+        body_button.setIcon(QIcon("asset/icon/body.png"))
+        body_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+        toolbar.addWidget(body_button)
+
+        # AI
+        self.ai_button = QToolButton()
+        self.ai_button.setText("AI")
+        self.ai_button.setIcon(QIcon("asset/icon/ai.png"))
+        self.ai_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        toolbar.addWidget(self.ai_button)
+        self.timer_message_box = TimerMessageBox(QMessageBox.Icon.Information, "正在处理中...")
+
         self.addToolBar(toolbar)
 
         # 三维可视化部件
@@ -83,9 +93,10 @@ class VolumeViewer(QMainWindow):
         self.camera = self.renderer.GetActiveCamera()
 
         # 信号与槽
-        body_button.clicked.connect(self.add_body)
         label_button.clicked.connect(self.open_label)
         label_slider.valueChanged.connect(self.adjust_label_opacity)
+        body_button.clicked.connect(self.add_body)
+        self.ai_button.clicked.connect(self.inference)
 
         # 加载
         view.Initialize()
@@ -238,3 +249,56 @@ class VolumeViewer(QMainWindow):
                 volume_pt(image.array_pt, _origin, _spacing, image_body),
             ]
         return _volume
+
+    def inference(self):
+        if self.images[0].modality == "PTCT":
+            self.woker = FRIWorker(self.images[0])
+            self.woker.finished.connect(self.get_fri_result)
+            self.woker.start()
+            self.timer_message_box.exec()
+
+    def get_fri_result(self, result):
+        print(f"[INFO] FRI result: {result}")
+        self.timer_message_box.accept()
+        information(f"[INFO] FRI 的检测诊断结果为 {result}.")
+
+        # 解析结果
+        classes, labels = [], []
+        for label in result:
+            classes.append(label["class_name"])
+            labels.append(label["bbox"])
+        # 转换结果
+        _labels = []
+        unique_classes = set(classes)
+        colors = get_colors(len(unique_classes))
+        c2c = {c1: c2 for c1, c2 in zip(unique_classes, colors)}
+        for c, l in zip(classes, labels):
+            _labels.append([*l, c, c2c[c]])
+
+        # 切换至主影像
+        self.view_menu.actions()[0].trigger()
+        # 更新view_menu
+        for a in self.view_menu.actions()[1:]:
+            self.view_menu.removeAction(a)
+        # 移除掉之前的label
+        for c, t in self.actors:
+            self.renderer.RemoveActor(c)
+            self.renderer.RemoveActor(t)
+        self.actors.clear()
+        del self.images[1:]
+        del self.volumes[1:]
+
+        # 根据图像获取原点与体素间距
+        _origin = [-0.5 * s1 * s2 for s1, s2 in zip(self.images[0].size, self.images[0].spacing)]
+        _spacing = self.images[0].spacing
+        for i, _l in enumerate(_labels):
+            self.actors.append(bbox(_l[0:3], _l[3:6], _origin, _spacing, _l[6], _l[7], self.label_opacity))
+            self.images.append(self.images[0][_l[2] : _l[5] + 1, _l[1] : _l[4] + 1, _l[0] : _l[3] + 1])
+            self.volumes.append(self.image_to_volume(self.images[-1]))
+            _action = self.view_menu.addAction(QIcon("asset/icon/checked1.png"), f"{i + 1} - {_l[6]}")
+            _action.triggered.connect(self.view_action_clicked)
+
+        # 渲染新的label
+        for c, t in self.actors:
+            self.renderer.AddActor(c)
+            self.renderer.AddActor(t)

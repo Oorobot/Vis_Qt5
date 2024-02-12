@@ -6,10 +6,11 @@ from PyQt6.QtCore import QThread, pyqtSignal
 class FRIWorker(QThread):
     finished = pyqtSignal(list)
 
-    def __init__(self, image, model_path: str, parent=None) -> None:
+    def __init__(self, image, parent=None) -> None:
         super().__init__(parent)
         self.image = image
-        self.model_path = model_path
+        self.model_path = "asset/model/FRI.pth"
+        self.model_path_stage2 = "asset/model/FRI_stage2.pth"
 
     def run(self) -> None:
         # TODO: 模型推理
@@ -17,7 +18,12 @@ class FRIWorker(QThread):
         # 示例代码
         time.sleep(6)
 
-        self.finished.emit([["a", 1, 2, 3, 4, 5, 6]])
+        self.finished.emit(
+            [
+                {"class_name": "Infected", "bbox": [144, 271, 150, 219, 316, 199]},
+                {"class_name": "Bladder", "bbox": [228, 251, 234, 287, 304, 243]},
+            ]
+        )
 
     def create_model(self):
         pass

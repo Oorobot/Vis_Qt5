@@ -25,7 +25,7 @@ def error(text: str):
 class TimerMessageBox(QMessageBox):
     def __init__(self, icon: QMessageBox.Icon, title: str):
         super().__init__()
-        self.setText("正在处理中...\n已用时：   0秒.")
+        self.setText("已用时：   0秒.")
         self.setIcon(icon)
         self.setWindowTitle(title)
         # 设置为始终在最顶层
@@ -45,9 +45,9 @@ class TimerMessageBox(QMessageBox):
     def accept(self) -> None:
         self.timer.stop()
         self.seconds = 0
-        self.setText("正在处理中...\n已用时：   0秒.")
+        self.setText("已用时：   0秒.")
         return super().accept()
 
     def update_message(self):
         self.seconds += 1
-        self.setText(f"正在处理中...\n已用时：{self.seconds:>4d}秒.")
+        self.setText(f"已用时：{self.seconds:>4d}秒.")
