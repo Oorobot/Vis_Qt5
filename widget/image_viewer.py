@@ -1,6 +1,7 @@
 import enum
 from typing import Union
 
+import pydicom
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QDoubleValidator, QFont, QIcon, QIntValidator
 from PyQt6.QtWidgets import (
@@ -10,6 +11,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QMenu,
+    QMessageBox,
     QSlider,
     QToolBar,
     QToolButton,
@@ -17,10 +19,11 @@ from PyQt6.QtWidgets import (
 )
 
 from utility import VIEW_TO_NAME, MedicalImage, MedicalImage2, read_nifti
-from widget import ImageConstrast, ImageView
+from worker import FRIWorker, PJIWorker
 
 from .image_constrast import ImageConstrast
 from .image_view import ImageView
+from .message_box import TimerMessageBox, information
 from .note import Note
 
 
@@ -225,6 +228,14 @@ class ImageViewer(QMainWindow):
         toolbar.addWidget(label_slider)
         toolbar.addSeparator()
 
+        # AI
+        self.ai_button = QToolButton()
+        self.ai_button.setText("AI")
+        self.ai_button.setIcon(QIcon("asset/icon/ai.png"))
+        self.ai_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+        toolbar.addWidget(self.ai_button)
+        self.timer_message_box = TimerMessageBox(QMessageBox.Icon.Information, "信息")
+
         self.addToolBar(toolbar)
 
         # 信号与槽
@@ -255,6 +266,8 @@ class ImageViewer(QMainWindow):
         label_slider.valueChanged.connect(self.adjust_label_opacity)
 
         self.view.position_changed.connect(self.set_position)
+
+        self.ai_button.clicked.connect(self.ai_inference)
 
     # 普通
     def activate_normal_mode(self):
@@ -349,3 +362,48 @@ class ImageViewer(QMainWindow):
         self.view.set_current_plane()
         self.view.scene_pos = self.view.position_to_scene_pos()
         self.view.scene().update()
+
+    def ai_inference(self):
+        # TODO: 整合入模型
+        if isinstance(self.view.image, MedicalImage) and self.view.image.modality == "NM":
+            _dcm = pydicom.dcmread(self.view.image.files[0])
+            if _dcm.StudyDescription == "Three Phase Bone":
+                # 选择膝部或者髋部
+                selection = QMessageBox()
+                selection.setIcon(QMessageBox.Icon.Question)
+                selection.setWindowTitle("请选择")
+                selection.setText("骨三相诊断：膝部或髋部")
+                selection.addButton("膝部", QMessageBox.ButtonRole.YesRole)
+                selection.addButton("髋部", QMessageBox.ButtonRole.NoRole)
+
+                result = selection.exec()
+                if result == QMessageBox.ButtonRole.NoRole:
+                    information("请选择感兴趣区域.")
+                    self.view.PJI_mode = True
+                    self.view.PJI_mode = False
+                else:
+                    image = self.view.image
+
+                self.woker = PJIWorker(self.view.image, "...")
+                self.woker.finished.connect(self.get_pji_result)
+                self.woker.start()
+                self.timer_message_box.exec()
+            else:
+                information("AI功能不支持当前影像。")
+                return
+        elif isinstance(self.view.image, MedicalImage2) and self.view.image.modality == "PTCT":
+            self.woker = FRIWorker(self.view.image, "...")
+            self.woker.finished.connect(self.get_fri_result)
+            self.woker.start()
+            self.timer_message_box.exec()
+        else:
+            information("AI功能不支持当前影像。")
+            return
+
+    def get_pji_result(self, result):
+        print("result: ", result)
+        self.timer_message_box.accept()
+
+    def get_fri_result(self, result):
+        print("result: ", result)
+        self.timer_message_box.accept()

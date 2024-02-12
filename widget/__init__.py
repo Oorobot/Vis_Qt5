@@ -6,5 +6,6 @@ from widget.image_item import ImageItem
 from widget.image_item2 import ImageItem2
 from widget.image_view import ImageView
 from widget.image_viewer import ImageViewer
-from widget.message_box import error, information, question, warning
+from widget.message_box import TimerMessageBox, error, information, question, warning
+from widget.note import Note
 from widget.volume_viewer import VolumeViewer

@@ -56,6 +56,10 @@ class ImageView(QGraphicsView):
         self.resize_or_slide = False
         self._scene_pos = QPointF(0, 0)
 
+        #
+        self.PJI_mode = True
+        self.PJI_box = None
+
     @property
     def position(self):
         return self._position[self.view]
@@ -146,6 +150,12 @@ class ImageView(QGraphicsView):
         if self.dragMode() == QGraphicsView.DragMode.NoDrag:
             self.scene_pos = self.mapToScene(event.pos())
             self.scene().update()
+            if self.PJI_mode:
+                print("self.scene_pos", self.scene_pos, ", self.PJI_box", self.PJI_box)
+                self.PJI_box = (
+                    min(max(self.scene_pos.x() - 20, 0), self.image_rect.right() - 40),
+                    min(max(self.scene_pos.y() - 20, 0), self.image_rect.bottom() - 40),
+                )
         else:
             return super().mousePressEvent(event)
 
@@ -153,8 +163,20 @@ class ImageView(QGraphicsView):
         if self.dragMode() == QGraphicsView.DragMode.NoDrag:
             self.scene_pos = self.mapToScene(event.pos())
             self.scene().update()
+            if self.PJI_mode:
+                print("self.scene_pos", self.scene_pos, ", self.PJI_box", self.PJI_box)
+                self.PJI_box = (
+                    min(max(self.scene_pos.x() - 20, self.image_rect.left()), self.image_rect.right() - 40),
+                    min(max(self.scene_pos.y() - 20, self.image_rect.top()), self.image_rect.bottom() - 40),
+                )
         else:
             return super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if self.dragMode() == QGraphicsView.DragMode.NoDrag and self.PJI_mode:
+            pass
+        else:
+            return super().mouseReleaseEvent()
 
     def drawForeground(self, painter: QPainter, rect: QRectF) -> None:
         painter.setPen(
@@ -195,6 +217,19 @@ class ImageView(QGraphicsView):
                 QPointF(self.scene_pos.x() + 1.5, self.scene_pos.y()),
                 QPointF(self.image_rect.right(), self.scene_pos.y()),
             )
+
+        # 绘制40×40的红色边界框
+        if self.PJI_mode and self.PJI_box is not None:
+            painter.setPen(
+                QPen(
+                    QColor("#FF0000"),
+                    1 / self.scale_current[0],
+                    Qt.PenStyle.SolidLine,
+                    Qt.PenCapStyle.SquareCap,
+                    Qt.PenJoinStyle.BevelJoin,
+                )
+            )
+            painter.drawRect(self.PJI_box[0], self.PJI_box[1], 40, 40)
 
     def position_to_scene_pos(self):
         if self.view == "t":
