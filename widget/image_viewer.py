@@ -94,11 +94,11 @@ class ImageViewer(QMainWindow):
         if self.toolbar_mode == self.ToolbarMode.Gray:
             self.pixel_value = Note(
                 f"{self.view.image_value:.2f}",
-                "HU"
-                if image.modality == "CT" or image.modality == "PTCT"
-                else "SUVbw"
-                if image.modality == "PT"
-                else "value",
+                (
+                    "HU"
+                    if image.modality == "CT" or image.modality == "PTCT"
+                    else "SUVbw" if image.modality == "PT" else "value"
+                ),
             )
             self.toolbar.addWidget(self.pixel_value)
         # RGB
@@ -374,7 +374,7 @@ class ImageViewer(QMainWindow):
                 selection = QMessageBox()
                 selection.setIcon(QMessageBox.Icon.Question)
                 selection.setWindowTitle("请选择")
-                selection.setText("骨三相诊断：膝部或髋部")
+                selection.setText("膝部或者髋部")
                 selection.addButton("膝部", QMessageBox.ButtonRole.YesRole)
                 selection.addButton("髋部", QMessageBox.ButtonRole.NoRole)
                 selection.exec()
@@ -390,7 +390,9 @@ class ImageViewer(QMainWindow):
                     self.view.PJI_mode = True
                     self.toolbar.setDisabled(True)
                     self.set_view("t")
-                    information("请选择感兴趣区域：\n鼠标左键点击将显示红框，\n鼠标移动，红框跟随，\n鼠标松开，红框所在区域即为感兴趣区域。")
+                    information(
+                        "请选择感兴趣区域：\n鼠标左键点击将显示红框，\n鼠标移动，红框跟随，\n鼠标松开，红框所在区域即为感兴趣区域。"
+                    )
                     return
             else:
                 information("AI功能不支持当前影像。")

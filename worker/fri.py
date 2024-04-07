@@ -20,8 +20,8 @@ class FRIWorker(QThread):
 
         self.finished.emit(
             [
-                {"class_name": "Infected", "bbox": [144, 271, 150, 219, 316, 199]},
-                {"class_name": "Bladder", "bbox": [228, 251, 234, 287, 304, 243]},
+                {"class_name": "infected", "bbox": [144, 271, 150, 219, 316, 199]},
+                {"class_name": "bladder", "bbox": [228, 251, 234, 287, 304, 243]},
             ]
         )
 

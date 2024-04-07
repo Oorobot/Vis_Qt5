@@ -260,7 +260,6 @@ class VolumeViewer(QMainWindow):
     def get_fri_result(self, result):
         print(f"[INFO] FRI result: {result}")
         self.timer_message_box.accept()
-        information(f"[INFO] FRI 的检测诊断结果为 {result}.")
 
         # 解析结果
         classes, labels = [], []
@@ -302,3 +301,10 @@ class VolumeViewer(QMainWindow):
         for c, t in self.actors:
             self.renderer.AddActor(c)
             self.renderer.AddActor(t)
+
+        i1 = classes.count("infected")
+        i2 = classes.count("uninfected")
+        i3 = classes.count("bladder")
+        information(
+            f"[INFO] FRI 的检测诊断结果为：\n    潜在的病灶区域 {i1+i2} 个\n    其中，感染区域 {i1} 个\n（详细的结果如可视化区域所示）"
+        )

@@ -29,7 +29,7 @@ class TimerMessageBox(QMessageBox):
         self.setIcon(icon)
         self.setWindowTitle(title)
         # 设置为始终在最顶层
-        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
+        # self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
         # 移除所有按钮
         self.setStandardButtons(QMessageBox.StandardButton.NoButton)
 
