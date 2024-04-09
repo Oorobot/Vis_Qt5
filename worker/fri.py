@@ -9,8 +9,8 @@ class FRIWorker(QThread):
     def __init__(self, image, parent=None) -> None:
         super().__init__(parent)
         self.image = image
-        self.model_path = "asset/model/FRI.pth"
-        self.model_path_stage2 = "asset/model/FRI_stage2.pth"
+        self.model_path_det = "asset/model/FRI_det.pth"
+        self.model_path_cls = "asset/model/FRI_cls.pth"
 
     def run(self) -> None:
         # TODO: 模型推理
